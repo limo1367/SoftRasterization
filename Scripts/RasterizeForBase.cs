@@ -18,7 +18,6 @@ public class RasterizeForBase : MonoBehaviour
     Texture2D sampleTex2D;
     
     FrameBuffer frameBuffer;
-    int aaaa;
 
     void Start()
     {

@@ -18,6 +18,7 @@ public class RasterizeForBase : MonoBehaviour
     Texture2D sampleTex2D;
     
     FrameBuffer frameBuffer;
+    int aaaa;
 
     void Start()
     {
@@ -57,7 +58,7 @@ public class RasterizeForBase : MonoBehaviour
         SetView(main_camera.transform.worldToLocalMatrix);
         SetProjection(main_camera);
 
-        int[] indices = meshFilter.mesh.triangles;//Èı½ÇĞÎË÷ÒıÊı×éµÄË³ĞòÀ´»æÖÆ
+        int[] indices = meshFilter.mesh.triangles;//ä¸‰è§’å½¢ç´¢å¼•æ•°ç»„çš„é¡ºåºæ¥ç»˜åˆ¶
         Vertex[] vertexArray = RasterizeUtils.GetVertexArray(meshFilter);
 
         for (int i = 0; i < indices.Length; i += 3)

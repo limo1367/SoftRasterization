@@ -3,13 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class RasterizeForBase : MonoBehaviour
+public class RasterizeForForwardRender : MonoBehaviour
 {
     Matrix4x4 main_model;
     Matrix4x4 main_view;
     Matrix4x4 main_projection;
 
     Camera main_camera;
+    Light directionLight;
 
     RawImage rasterizeImage;
     Texture2D rasterizeTex2D;
@@ -32,6 +33,7 @@ public class RasterizeForBase : MonoBehaviour
         sampleTex2D = modelProperty.albedo;
 
         main_camera = GameObject.Find("MainCamera").GetComponent<Camera>();
+        directionLight = GameObject.Find("DirectionalLight").GetComponent<Light>();
 
         frameBuffer = new FrameBuffer(Screen.width, Screen.height);
 
@@ -41,7 +43,7 @@ public class RasterizeForBase : MonoBehaviour
         for (int i = 0; i < gameObjectMeshs.Length; i++)
         {
             MeshFilter mesh = gameObjectMeshs[i];
-            OnSimpleRender(mesh);
+            OnForwardRender(mesh);
         }
 
         rasterizeTex2D.Apply();
@@ -49,7 +51,7 @@ public class RasterizeForBase : MonoBehaviour
     }
 
 
-    public void OnSimpleRender(MeshFilter mesh)
+    public void OnForwardRender(MeshFilter mesh)
     {
 
         MeshFilter meshFilter = mesh;
@@ -163,9 +165,31 @@ public class RasterizeForBase : MonoBehaviour
                             float[] texel = RasterizeUtils.SampleTexel(ii, jj, vert1, vert2, vert3, sampleTex2D);
                             Color c1 = RasterizeUtils.GetColorByBilinear(texel,sampleTex2D,level1);
                             Color c2 = RasterizeUtils.GetColorByBilinear(texel, sampleTex2D,level1 + 1);
-                            Color c1c2 = Color.Lerp(c1, c2, levelRate);
+                            Color mainTexColor = Color.Lerp(c1, c2, levelRate);
 
-                            rasterizeTex2D.SetPixel(ii, jj, c1c2);
+                            Vector3 transposeNormal = main_model.inverse.transpose.MultiplyVector(normal);
+                            transposeNormal = transposeNormal.normalized;
+
+              
+                            Color lightColor = directionLight.color;
+                            Vector3 lightPos = directionLight.transform.position;
+                            Vector3 lightDir = lightPos - worldPos;
+                            float distance = Vector3.Distance(lightPos, worldPos);
+                            lightDir = lightDir.normalized;
+                            Color diffuse = lightColor * Mathf.Max(0, Vector3.Dot(lightDir, transposeNormal));
+
+                            Color ambientColor = new Color(0.212f, 0.227f, 0.259f);
+
+                            Vector3 lightDir2 = lightPos - worldPos;
+                            float distance2 = Vector3.Distance(lightPos, worldPos);
+                            float attenuation = 1 / distance2;
+                            Vector3 viewPos = main_camera.transform.position;
+                            Vector3 viewDir = (viewPos - worldPos);
+                            Vector3 h = (lightDir2 + viewDir).normalized;
+                            Color specular = Color.white * Mathf.Max(0, Mathf.Pow(Vector3.Dot(h, transposeNormal), 64)) * attenuation;
+
+                            Color pixelColor = ambientColor + mainTexColor * diffuse + specular;
+                            rasterizeTex2D.SetPixel(ii, jj, pixelColor);
                         }
                     }
                 }

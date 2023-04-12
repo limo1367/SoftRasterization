@@ -10,7 +10,7 @@ public class RasterizeForForwardRender : MonoBehaviour
     Matrix4x4 main_projection;
 
     Camera main_camera;
-    Light directionLight;
+    LightShader lightShader;
 
     RawImage rasterizeImage;
     Texture2D rasterizeTex2D;
@@ -19,6 +19,12 @@ public class RasterizeForForwardRender : MonoBehaviour
     Texture2D sampleTex2D;
     
     FrameBuffer frameBuffer;
+
+    /// <summary>
+    /// 1,PerVert 逐顶点处理
+    /// 2,PerPixel 逐像素处理
+    /// </summary>
+    public string lightProcessType;
 
     void Start()
     {
@@ -33,8 +39,10 @@ public class RasterizeForForwardRender : MonoBehaviour
         sampleTex2D = modelProperty.albedo;
 
         main_camera = GameObject.Find("MainCamera").GetComponent<Camera>();
-        directionLight = GameObject.Find("DirectionalLight").GetComponent<Light>();
+        Light directionLight = GameObject.Find("DirectionalLight").GetComponent<Light>();
+        Light ambientLight = GameObject.Find("AmbientLight").GetComponent<Light>();
 
+        lightShader = new LightShader(ambientLight, directionLight);
         frameBuffer = new FrameBuffer(Screen.width, Screen.height);
 
         MeshFilter[] gameObjectMeshs = GetComponentsInChildren<MeshFilter>();
@@ -43,15 +51,22 @@ public class RasterizeForForwardRender : MonoBehaviour
         for (int i = 0; i < gameObjectMeshs.Length; i++)
         {
             MeshFilter mesh = gameObjectMeshs[i];
-            OnForwardRender(mesh);
+            if (lightProcessType == "PerVert")
+                OnForwardRenderForPerVert(mesh);
+            else
+                OnForwardRenderForPerPixel(mesh);
+
+
         }
 
         rasterizeTex2D.Apply();
         rasterizeImage.texture = rasterizeTex2D;
     }
 
-
-    public void OnForwardRender(MeshFilter mesh)
+    /// <summary>
+    /// 逐像素处理
+    /// </summary>
+    public void OnForwardRenderForPerPixel(MeshFilter mesh)
     {
 
         MeshFilter meshFilter = mesh;
@@ -170,25 +185,13 @@ public class RasterizeForForwardRender : MonoBehaviour
                             Vector3 transposeNormal = main_model.inverse.transpose.MultiplyVector(normal);
                             transposeNormal = transposeNormal.normalized;
 
-              
-                            Color lightColor = directionLight.color;
-                            Vector3 lightPos = directionLight.transform.position;
-                            Vector3 lightDir = lightPos - worldPos;
-                            float distance = Vector3.Distance(lightPos, worldPos);
-                            lightDir = lightDir.normalized;
-                            Color diffuse = lightColor * Mathf.Max(0, Vector3.Dot(lightDir, transposeNormal));
+                            lightShader.normal = transposeNormal;
+                            lightShader.world_pos = worldPos;
+                            lightShader.main_view_world = main_camera.transform.position;
 
-                            Color ambientColor = new Color(0.212f, 0.227f, 0.259f);
+                            lightShader.OnLightProcess();
 
-                            Vector3 lightDir2 = lightPos - worldPos;
-                            float distance2 = Vector3.Distance(lightPos, worldPos);
-                            float attenuation = 1 / distance2;
-                            Vector3 viewPos = main_camera.transform.position;
-                            Vector3 viewDir = (viewPos - worldPos);
-                            Vector3 h = (lightDir2 + viewDir).normalized;
-                            Color specular = Color.white * Mathf.Max(0, Mathf.Pow(Vector3.Dot(h, transposeNormal), 64)) * attenuation;
-
-                            Color pixelColor = ambientColor + mainTexColor * diffuse + specular;
+                            Color pixelColor = lightShader.ambient + lightShader.diffuse * mainTexColor + lightShader.specular;
                             rasterizeTex2D.SetPixel(ii, jj, pixelColor);
                         }
                     }
@@ -198,7 +201,156 @@ public class RasterizeForForwardRender : MonoBehaviour
 
      
     }
- 
+
+    /// <summary>
+    /// 逐顶点处理
+    /// </summary>
+    public void OnForwardRenderForPerVert(MeshFilter mesh)
+    {
+
+        MeshFilter meshFilter = mesh;
+        SetModel(meshFilter.transform.localToWorldMatrix);
+        SetView(main_camera.transform.worldToLocalMatrix);
+        SetProjection(main_camera);
+
+        int[] indices = meshFilter.mesh.triangles;//三角形索引数组的顺序来绘制
+        Vertex[] vertexArray = RasterizeUtils.GetVertexArray(meshFilter);
+
+        for (int i = 0; i < indices.Length; i += 3)
+        {
+            int index1 = indices[i];
+            int index2 = indices[i + 1];
+            int index3 = indices[i + 2];
+
+
+            Vertex vert1 = vertexArray[index1];
+            Vertex vert2 = vertexArray[index2];
+            Vertex vert3 = vertexArray[index3];
+
+            vert1.UnityObjectToViewPort(main_model, main_view, main_projection);
+            vert2.UnityObjectToViewPort(main_model, main_view, main_projection);
+            vert3.UnityObjectToViewPort(main_model, main_view, main_projection);
+
+
+            Vector3 v1v2 = vert2.vert_ndc - vert1.vert_ndc;
+            Vector3 v1v3 = vert3.vert_ndc - vert1.vert_ndc;
+            float Cullz = Vector3.Cross(v1v2, v1v3).z;
+
+            if (Cullz >= 0)
+                continue;
+
+            vert1.UNITY_TRANSFER_PIXEL();
+            vert2.UNITY_TRANSFER_PIXEL();
+            vert3.UNITY_TRANSFER_PIXEL();
+
+            lightShader.main_view_world = main_camera.transform.position;
+
+            lightShader.normal = vert1.normal;
+            lightShader.world_pos = vert1.vert_world;
+            lightShader.OnLightProcess();
+            Color vert1_diffuse = lightShader.diffuse;
+            Color vert1_specular = lightShader.specular;
+
+            lightShader.normal = vert2.normal;
+            lightShader.world_pos = vert2.vert_world;
+            lightShader.OnLightProcess();
+            Color vert2_diffuse = lightShader.diffuse;
+            Color vert2_specular = lightShader.specular;
+
+
+            lightShader.normal = vert3.normal;
+            lightShader.world_pos = vert3.vert_world;
+            lightShader.OnLightProcess();
+            Color vert3_diffuse = lightShader.diffuse;
+            Color vert3_specular = lightShader.specular;
+
+            List<Vector4> clippedVertices0 = new List<Vector4> { vert1.vert_proj, vert2.vert_proj, vert3.vert_proj };
+            List<Vector4> clippedVertices1 = RasterizeUtils.ClipWithPlane(clippedVertices0, ClipPlane.Near);
+            List<Vector4> clippedVertices2 = RasterizeUtils.ClipWithPlane(clippedVertices1, ClipPlane.Far);
+            List<Vector4> clippedVertices3 = RasterizeUtils.ClipWithPlane(clippedVertices2, ClipPlane.Left);
+            List<Vector4> clippedVertices4 = RasterizeUtils.ClipWithPlane(clippedVertices3, ClipPlane.Right);
+            List<Vector4> clippedVertices5 = RasterizeUtils.ClipWithPlane(clippedVertices4, ClipPlane.Top);
+            List<Vector4> clippedVertices6 = RasterizeUtils.ClipWithPlane(clippedVertices5, ClipPlane.Bottom);
+
+            if (clippedVertices6.Count < 3)
+                continue;
+
+            for (int iClipVert = 0; iClipVert < clippedVertices6.Count - 2; iClipVert++)
+            {
+
+                int clipIndex1 = 0;
+                int clipIndex2 = iClipVert + 1;
+                int clipIndex3 = iClipVert + 2;
+
+                Vector4 vert1_proj_clip = clippedVertices6[clipIndex1];
+                Vector4 vert2_proj_clip = clippedVertices6[clipIndex2];
+                Vector4 vert3_proj_clip = clippedVertices6[clipIndex3];
+
+
+                Vector3 vert1_ndc_clip = new Vector3(vert1_proj_clip.x / vert1_proj_clip.w, vert1_proj_clip.y / vert1_proj_clip.w, vert1_proj_clip.z / vert1_proj_clip.w);
+                Vector3 vert2_ndc_clip = new Vector3(vert2_proj_clip.x / vert2_proj_clip.w, vert2_proj_clip.y / vert2_proj_clip.w, vert2_proj_clip.z / vert2_proj_clip.w);
+                Vector3 vert3_ndc_clip = new Vector3(vert3_proj_clip.x / vert3_proj_clip.w, vert3_proj_clip.y / vert3_proj_clip.w, vert3_proj_clip.z / vert3_proj_clip.w);
+
+                Vector3 vert1_viewport_clip = new Vector3((vert1_ndc_clip.x + 1) / 2, (vert1_ndc_clip.y + 1) / 2, 0);
+                Vector3 vert2_viewport_clip = new Vector3((vert2_ndc_clip.x + 1) / 2, (vert2_ndc_clip.y + 1) / 2, 0);
+                Vector3 vert3_viewport_clip = new Vector3((vert3_ndc_clip.x + 1) / 2, (vert3_ndc_clip.y + 1) / 2, 0);
+
+                Vector2 vert1_pixel_clip = new Vector2(vert1_viewport_clip.x * Screen.width, vert1_viewport_clip.y * Screen.height);
+                Vector2 vert2_pixel_clip = new Vector2(vert2_viewport_clip.x * Screen.width, vert2_viewport_clip.y * Screen.height);
+                Vector2 vert3_pixel_clip = new Vector2(vert3_viewport_clip.x * Screen.width, vert3_viewport_clip.y * Screen.height);
+
+                Vector2Int bboxMin = new Vector2Int((int)Mathf.Min(Mathf.Min(vert1_pixel_clip.x, vert2_pixel_clip.x), vert3_pixel_clip.x),
+                                                (int)Mathf.Min(Mathf.Min(vert1_pixel_clip.y, vert2_pixel_clip.y), vert3_pixel_clip.y));
+                Vector2Int bboxMax = new Vector2Int((int)(Mathf.Max(Mathf.Max(vert1_pixel_clip.x, vert2_pixel_clip.x), vert3_pixel_clip.x) + 0.5f),
+                                                (int)(Mathf.Max(Mathf.Max(vert1_pixel_clip.y, vert2_pixel_clip.y), vert3_pixel_clip.y) + 0.5f));
+
+                for (int ii = bboxMin.x; ii < bboxMax.x; ii++)
+                {
+
+                    for (int jj = bboxMin.y; jj < bboxMax.y; jj++)
+                    {
+                        if (RasterizeUtils.IsInsideTriangle(ii + 0.5f, jj + 0.5f, vert1, vert2, vert3))
+                        {
+
+                            Vector3 barycentricCoordinate = RasterizeUtils.BarycentricCoordinate(ii + 0.5f, jj + 0.5f, vert1, vert2, vert3);
+
+                            float z_view = 1.0f / (barycentricCoordinate.x / vert1.vert_proj.w + barycentricCoordinate.y / vert2.vert_proj.w + barycentricCoordinate.z / vert3.vert_proj.w);
+
+                            float z_interpolated = z_view * (vert1.vert_ndc.z / vert1.vert_proj.w * barycentricCoordinate.x +
+                                                vert2.vert_ndc.z / vert2.vert_proj.w * barycentricCoordinate.y +
+                                                vert3.vert_ndc.z / vert3.vert_proj.w * barycentricCoordinate.z);
+                            float depth = (z_interpolated + 1) / 2f;
+
+                            float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
+                            if (depth > depthBuffer) continue;
+                            frameBuffer.SetDepthBuffer(ii, jj, depth);
+
+                          
+                            Color diffuse = z_view * (vert1_diffuse / vert1.vert_view.z * barycentricCoordinate.x +
+                                                vert2_diffuse / vert2.vert_view.z * barycentricCoordinate.y +
+                                               vert3_diffuse / vert3.vert_view.z * barycentricCoordinate.z);
+
+                            Color specular = z_view * (vert1_specular / vert1.vert_view.z * barycentricCoordinate.x +
+                                               vert2_specular / vert2.vert_view.z * barycentricCoordinate.y +
+                                              vert3_specular / vert3.vert_view.z * barycentricCoordinate.z);
+
+                            double level = RasterizeUtils.ComputeMipMapLevel(ii, jj, vert1, vert2, vert3, sampleTex2D);
+                            float levelRate = RasterizeUtils.GetFloat(level);
+                            int level1 = (int)level;
+                            float[] texel = RasterizeUtils.SampleTexel(ii, jj, vert1, vert2, vert3, sampleTex2D);
+                            Color c1 = RasterizeUtils.GetColorByBilinear(texel, sampleTex2D, level1);
+                            Color c2 = RasterizeUtils.GetColorByBilinear(texel, sampleTex2D, level1 + 1);
+                            Color mainTexColor = Color.Lerp(c1, c2, levelRate);
+
+                            Color pixelColor = lightShader.ambient + diffuse * mainTexColor + specular;
+                            rasterizeTex2D.SetPixel(ii, jj, pixelColor);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private void SetModel(Matrix4x4 model)
     {
         main_model = model;
@@ -225,7 +377,6 @@ public class RasterizeForForwardRender : MonoBehaviour
         {
             Matrix4x4 perspectiveProjection = Perspective(camera.nearClipPlane, camera.farClipPlane, camera.fieldOfView, camera.aspect);
             SetProjection(perspectiveProjection);
-
         }
     }
 

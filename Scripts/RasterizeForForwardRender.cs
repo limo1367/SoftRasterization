@@ -182,10 +182,7 @@ public class RasterizeForForwardRender : MonoBehaviour
                             Color c2 = RasterizeUtils.GetColorByBilinear(texel, sampleTex2D,level1 + 1);
                             Color mainTexColor = Color.Lerp(c1, c2, levelRate);
 
-                            Vector3 transposeNormal = main_model.inverse.transpose.MultiplyVector(normal);
-                            transposeNormal = transposeNormal.normalized;
-
-                            lightShader.normal = transposeNormal;
+                            lightShader.normal = main_model.inverse.transpose.MultiplyVector(normal);
                             lightShader.world_pos = worldPos;
                             lightShader.main_view_world = main_camera.transform.position;
 
@@ -207,7 +204,6 @@ public class RasterizeForForwardRender : MonoBehaviour
     /// </summary>
     public void OnForwardRenderForPerVert(MeshFilter mesh)
     {
-
         MeshFilter meshFilter = mesh;
         SetModel(meshFilter.transform.localToWorldMatrix);
         SetView(main_camera.transform.worldToLocalMatrix);
@@ -245,20 +241,20 @@ public class RasterizeForForwardRender : MonoBehaviour
 
             lightShader.main_view_world = main_camera.transform.position;
 
-            lightShader.normal = vert1.normal;
+            lightShader.normal = main_model.inverse.transpose.MultiplyVector(vert1.normal);
             lightShader.world_pos = vert1.vert_world;
             lightShader.OnLightProcess();
             Color vert1_diffuse = lightShader.diffuse;
             Color vert1_specular = lightShader.specular;
 
-            lightShader.normal = vert2.normal;
+            lightShader.normal = main_model.inverse.transpose.MultiplyVector(vert2.normal);
             lightShader.world_pos = vert2.vert_world;
             lightShader.OnLightProcess();
             Color vert2_diffuse = lightShader.diffuse;
             Color vert2_specular = lightShader.specular;
 
 
-            lightShader.normal = vert3.normal;
+            lightShader.normal = main_model.inverse.transpose.MultiplyVector(vert3.normal);
             lightShader.world_pos = vert3.vert_world;
             lightShader.OnLightProcess();
             Color vert3_diffuse = lightShader.diffuse;

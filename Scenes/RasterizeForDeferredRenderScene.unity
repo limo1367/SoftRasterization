@@ -898,10 +898,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 1364485838}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a31598380c1d54c4681bddedcc59b339, type: 3}
+  m_Script: {fileID: 11500000, guid: edfee05dcfa0e104e9a436df88fbc950, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  lightProcessType: PerVert
+  lightProcessType: 
 --- !u!1 &1401333085
 GameObject:
   m_ObjectHideFlags: 0

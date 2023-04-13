@@ -2,7 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-
+/// <summary>
+/// —”≥Ÿ‰÷»æ
+/// </summary>
 public class RasterizeForDeferredRender : MonoBehaviour
 {
     Matrix4x4 main_model;

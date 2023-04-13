@@ -83,7 +83,7 @@ public class FrameBuffer
         {
             for (int j = 0; j < texHeight; j++)
             {
-                SetDepthBuffer(i, j, float.PositiveInfinity);
+                SetDepthBuffer(i, j, -1);
                 SetColorBuffer(i, j, Color.black);
                 SetNormalBuffer(i, j, Vector3.zero);
                 SetWorldCoorBuffer(i, j, Vector3.zero);

@@ -8,9 +8,9 @@ public class LightShader
     public Light directionLight;
 
     public Vector3 normal;
-    public Vector3 world_pos;
+    public Vector3 world_coor;
 
-    public Vector3 main_view_world;
+    public Vector3 main_view_world_coor;
 
     public Color diffuse;
     public Color specular;
@@ -35,7 +35,7 @@ public class LightShader
         diffuse = Color.black;
         Color lightColor = light.color;
         Vector3 lightPos = light.transform.position;
-        Vector3 lightDir = (lightPos - world_pos).normalized;
+        Vector3 lightDir = (lightPos - world_coor).normalized;
         diffuse += lightColor * Mathf.Max(0, Vector3.Dot(lightDir, normal));
 
     }
@@ -45,12 +45,12 @@ public class LightShader
         specular = Color.black;
 
         Vector3 lightPos = light.transform.position;
-        Vector3 lightDir = lightPos - world_pos;
+        Vector3 lightDir = lightPos - world_coor;
 
-        float distance = Vector3.Distance(lightPos, world_pos);
+        float distance = Vector3.Distance(lightPos, world_coor);
         float attenuation = 1 / distance;
 
-        Vector3 viewDir = main_view_world - world_pos;
+        Vector3 viewDir = main_view_world_coor - world_coor;
         Vector3 h = (lightDir + viewDir).normalized;
 
         specular += Color.white * Mathf.Max(0, Mathf.Pow(Vector3.Dot(h, normal), 64)) * attenuation;

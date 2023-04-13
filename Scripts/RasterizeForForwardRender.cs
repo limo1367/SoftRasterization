@@ -93,8 +93,8 @@ public class RasterizeForForwardRender : MonoBehaviour
             vert3.UnityObjectToViewPort(main_model, main_view, main_projection);
 
      
-            Vector3 v1v2 = vert2.vert_ndc - vert1.vert_ndc;
-            Vector3 v1v3 = vert3.vert_ndc - vert1.vert_ndc;
+            Vector3 v1v2 = vert2.vert_ndc_coor - vert1.vert_ndc_coor;
+            Vector3 v1v3 = vert3.vert_ndc_coor - vert1.vert_ndc_coor;
             float Cullz = Vector3.Cross(v1v2, v1v3).z;
            
             if (Cullz >= 0)
@@ -105,7 +105,7 @@ public class RasterizeForForwardRender : MonoBehaviour
             vert3.UNITY_TRANSFER_PIXEL();
 
   
-            List<Vector4> clippedVertices0 = new List<Vector4> { vert1.vert_proj, vert2.vert_proj, vert3.vert_proj };
+            List<Vector4> clippedVertices0 = new List<Vector4> { vert1.vert_proj_coor, vert2.vert_proj_coor, vert3.vert_proj_coor };
             List<Vector4> clippedVertices1 = RasterizeUtils.ClipWithPlane(clippedVertices0, ClipPlane.Near);
             List<Vector4> clippedVertices2 = RasterizeUtils.ClipWithPlane(clippedVertices1, ClipPlane.Far);
             List<Vector4> clippedVertices3 = RasterizeUtils.ClipWithPlane(clippedVertices2, ClipPlane.Left);
@@ -152,40 +152,69 @@ public class RasterizeForForwardRender : MonoBehaviour
                     {
                         if (RasterizeUtils.IsInsideTriangle(ii + 0.5f, jj + 0.5f, vert1, vert2, vert3))
                         {
-                            
                             Vector3 barycentricCoordinate = RasterizeUtils.BarycentricCoordinate(ii + 0.5f, jj + 0.5f, vert1, vert2, vert3);
 
-                            float z_view = 1.0f / (barycentricCoordinate.x / vert1.vert_proj.w + barycentricCoordinate.y / vert2.vert_proj.w + barycentricCoordinate.z / vert3.vert_proj.w);
+                            bool isOrthographic = main_camera.orthographic;
+                            float depth;
+                            Vector3 worldCoor;
+                            Vector3 normal;
 
-                            float z_interpolated = z_view * (vert1.vert_ndc.z / vert1.vert_proj.w * barycentricCoordinate.x +
-                                                vert2.vert_ndc.z / vert2.vert_proj.w * barycentricCoordinate.y +
-                                                vert3.vert_ndc.z / vert3.vert_proj.w * barycentricCoordinate.z);
-                            float depth = (z_interpolated + 1) / 2f;
+                            if (isOrthographic)
+                            {
+                                depth = vert1.vert_view_coor.z * barycentricCoordinate.x +
+                                        vert2.vert_view_coor.z * barycentricCoordinate.y +
+                                        vert3.vert_view_coor.z * barycentricCoordinate.z;
+
+                                worldCoor = vert1.vert_world_coor * barycentricCoordinate.x +
+                                            vert2.vert_world_coor * barycentricCoordinate.y +
+                                            vert3.vert_world_coor * barycentricCoordinate.z;
+
+                                normal = vert1.normal * barycentricCoordinate.x +
+                                         vert2.normal * barycentricCoordinate.y +
+                                         vert3.normal * barycentricCoordinate.z;
+                            }
+                            else
+                            {
+                                float z_view = 1.0f / (barycentricCoordinate.x / vert1.vert_proj_coor.w + barycentricCoordinate.y / vert2.vert_proj_coor.w + barycentricCoordinate.z / vert3.vert_proj_coor.w);
+
+                                depth = z_view * (vert1.vert_proj_coor.z / vert1.vert_proj_coor.w * barycentricCoordinate.x +
+                                                  vert2.vert_proj_coor.z / vert2.vert_proj_coor.w * barycentricCoordinate.y +
+                                                  vert3.vert_proj_coor.z / vert3.vert_proj_coor.w * barycentricCoordinate.z);
+
+                                worldCoor = z_view * (vert1.vert_world_coor / vert1.vert_view_coor.z * barycentricCoordinate.x +
+                                                      vert2.vert_world_coor / vert2.vert_view_coor.z * barycentricCoordinate.y +
+                                                      vert3.vert_world_coor / vert3.vert_view_coor.z * barycentricCoordinate.z);
+
+                                normal = z_view * (vert1.normal / vert1.vert_view_coor.z * barycentricCoordinate.x +
+                                                   vert2.normal / vert2.vert_view_coor.z * barycentricCoordinate.y +
+                                                   vert3.normal / vert3.vert_view_coor.z * barycentricCoordinate.z);
+                            }
 
                             float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
-                            if (depth > depthBuffer) continue;
+
+
+                            if (depthBuffer < 0)
+                            {
+
+                            }
+                            else
+                            {
+                                if (depth > depthBuffer) continue;
+                            }
                             frameBuffer.SetDepthBuffer(ii, jj,depth);
 
-                            Vector3 worldPos = z_view * (vert1.vert_world / vert1.vert_view.z * barycentricCoordinate.x +
-                                                    vert2.vert_world / vert2.vert_view.z * barycentricCoordinate.y +
-                                                    vert3.vert_world / vert3.vert_view.z * barycentricCoordinate.z);
 
-                            Vector3 normal = z_view * (vert1.normal / vert1.vert_view.z * barycentricCoordinate.x +
-                                                 vert2.normal / vert2.vert_view.z * barycentricCoordinate.y +
-                                                vert3.normal / vert3.vert_view.z * barycentricCoordinate.z);
-
-                            double level = RasterizeUtils.ComputeMipMapLevel(ii, jj, vert1, vert2, vert3, sampleTex2D);
+                            double level = RasterizeUtils.ComputeMipMapLevel(ii, jj, vert1, vert2, vert3, sampleTex2D, isOrthographic);
                             float levelRate = RasterizeUtils.GetFloat(level);
                             int level1 = (int)level;
-                            float[] texel = RasterizeUtils.SampleTexel(ii, jj, vert1, vert2, vert3, sampleTex2D);
+                            float[] texel = RasterizeUtils.SampleTexel(ii, jj, vert1, vert2, vert3, sampleTex2D, isOrthographic);
                             Color c1 = RasterizeUtils.GetColorByBilinear(texel,sampleTex2D,level1);
                             Color c2 = RasterizeUtils.GetColorByBilinear(texel, sampleTex2D,level1 + 1);
                             Color mainTexColor = Color.Lerp(c1, c2, levelRate);
 
                             lightShader.normal = main_model.inverse.transpose.MultiplyVector(normal);
-                            lightShader.world_pos = worldPos;
-                            lightShader.main_view_world = main_camera.transform.position;
-
+                            lightShader.world_coor = worldCoor;
+                            lightShader.main_view_world_coor = main_camera.transform.position;
                             lightShader.OnLightProcess();
 
                             Color pixelColor = lightShader.ambient + lightShader.diffuse * mainTexColor + lightShader.specular;
@@ -228,8 +257,8 @@ public class RasterizeForForwardRender : MonoBehaviour
             vert3.UnityObjectToViewPort(main_model, main_view, main_projection);
 
 
-            Vector3 v1v2 = vert2.vert_ndc - vert1.vert_ndc;
-            Vector3 v1v3 = vert3.vert_ndc - vert1.vert_ndc;
+            Vector3 v1v2 = vert2.vert_ndc_coor - vert1.vert_ndc_coor;
+            Vector3 v1v3 = vert3.vert_ndc_coor - vert1.vert_ndc_coor;
             float Cullz = Vector3.Cross(v1v2, v1v3).z;
 
             if (Cullz >= 0)
@@ -239,28 +268,28 @@ public class RasterizeForForwardRender : MonoBehaviour
             vert2.UNITY_TRANSFER_PIXEL();
             vert3.UNITY_TRANSFER_PIXEL();
 
-            lightShader.main_view_world = main_camera.transform.position;
+            lightShader.main_view_world_coor = main_camera.transform.position;
 
             lightShader.normal = main_model.inverse.transpose.MultiplyVector(vert1.normal);
-            lightShader.world_pos = vert1.vert_world;
+            lightShader.world_coor = vert1.vert_world_coor;
             lightShader.OnLightProcess();
             Color vert1_diffuse = lightShader.diffuse;
             Color vert1_specular = lightShader.specular;
 
             lightShader.normal = main_model.inverse.transpose.MultiplyVector(vert2.normal);
-            lightShader.world_pos = vert2.vert_world;
+            lightShader.world_coor = vert2.vert_world_coor;
             lightShader.OnLightProcess();
             Color vert2_diffuse = lightShader.diffuse;
             Color vert2_specular = lightShader.specular;
 
 
             lightShader.normal = main_model.inverse.transpose.MultiplyVector(vert3.normal);
-            lightShader.world_pos = vert3.vert_world;
+            lightShader.world_coor = vert3.vert_world_coor;
             lightShader.OnLightProcess();
             Color vert3_diffuse = lightShader.diffuse;
             Color vert3_specular = lightShader.specular;
 
-            List<Vector4> clippedVertices0 = new List<Vector4> { vert1.vert_proj, vert2.vert_proj, vert3.vert_proj };
+            List<Vector4> clippedVertices0 = new List<Vector4> { vert1.vert_proj_coor, vert2.vert_proj_coor, vert3.vert_proj_coor };
             List<Vector4> clippedVertices1 = RasterizeUtils.ClipWithPlane(clippedVertices0, ClipPlane.Near);
             List<Vector4> clippedVertices2 = RasterizeUtils.ClipWithPlane(clippedVertices1, ClipPlane.Far);
             List<Vector4> clippedVertices3 = RasterizeUtils.ClipWithPlane(clippedVertices2, ClipPlane.Left);
@@ -310,30 +339,59 @@ public class RasterizeForForwardRender : MonoBehaviour
 
                             Vector3 barycentricCoordinate = RasterizeUtils.BarycentricCoordinate(ii + 0.5f, jj + 0.5f, vert1, vert2, vert3);
 
-                            float z_view = 1.0f / (barycentricCoordinate.x / vert1.vert_proj.w + barycentricCoordinate.y / vert2.vert_proj.w + barycentricCoordinate.z / vert3.vert_proj.w);
+                            bool isOrthographic = main_camera.orthographic;
+                            float depth;
+                            Color diffuse;
+                            Color specular;
 
-                            float z_interpolated = z_view * (vert1.vert_ndc.z / vert1.vert_proj.w * barycentricCoordinate.x +
-                                                vert2.vert_ndc.z / vert2.vert_proj.w * barycentricCoordinate.y +
-                                                vert3.vert_ndc.z / vert3.vert_proj.w * barycentricCoordinate.z);
-                            float depth = (z_interpolated + 1) / 2f;
+                            if (isOrthographic)
+                            {
+                                depth = vert1.vert_view_coor.z * barycentricCoordinate.x +
+                                        vert2.vert_view_coor.z * barycentricCoordinate.y +
+                                        vert3.vert_view_coor.z * barycentricCoordinate.z;
 
+                                diffuse = vert1_diffuse * barycentricCoordinate.x +
+                                          vert2_diffuse * barycentricCoordinate.y +
+                                          vert3_diffuse * barycentricCoordinate.z;
+
+                                specular = vert1_specular * barycentricCoordinate.x +
+                                           vert2_specular * barycentricCoordinate.y +
+                                           vert3_specular * barycentricCoordinate.z;
+                            }
+                            else
+                            {
+                                float z_view = 1.0f / (barycentricCoordinate.x / vert1.vert_proj_coor.w + barycentricCoordinate.y / vert2.vert_proj_coor.w + barycentricCoordinate.z / vert3.vert_proj_coor.w);
+
+                                depth = z_view * (vert1.vert_proj_coor.z / vert1.vert_proj_coor.w * barycentricCoordinate.x +
+                                                  vert2.vert_proj_coor.z / vert2.vert_proj_coor.w * barycentricCoordinate.y +
+                                                  vert3.vert_proj_coor.z / vert3.vert_proj_coor.w * barycentricCoordinate.z);
+
+                                diffuse = z_view * (vert1_diffuse / vert1.vert_view_coor.z * barycentricCoordinate.x +
+                                                    vert2_diffuse / vert2.vert_view_coor.z * barycentricCoordinate.y +
+                                                    vert3_diffuse / vert3.vert_view_coor.z * barycentricCoordinate.z);
+
+                                specular = z_view * (vert1_specular / vert1.vert_view_coor.z * barycentricCoordinate.x +
+                                                     vert2_specular / vert2.vert_view_coor.z * barycentricCoordinate.y +
+                                                     vert3_specular / vert3.vert_view_coor.z * barycentricCoordinate.z);
+                            }
+
+ 
                             float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
-                            if (depth > depthBuffer) continue;
+                            if (depthBuffer < 0)
+                            {
+
+                            }
+                            else
+                            {
+                                if (depth > depthBuffer) continue;
+                            }
+
                             frameBuffer.SetDepthBuffer(ii, jj, depth);
 
-                          
-                            Color diffuse = z_view * (vert1_diffuse / vert1.vert_view.z * barycentricCoordinate.x +
-                                                vert2_diffuse / vert2.vert_view.z * barycentricCoordinate.y +
-                                               vert3_diffuse / vert3.vert_view.z * barycentricCoordinate.z);
-
-                            Color specular = z_view * (vert1_specular / vert1.vert_view.z * barycentricCoordinate.x +
-                                               vert2_specular / vert2.vert_view.z * barycentricCoordinate.y +
-                                              vert3_specular / vert3.vert_view.z * barycentricCoordinate.z);
-
-                            double level = RasterizeUtils.ComputeMipMapLevel(ii, jj, vert1, vert2, vert3, sampleTex2D);
+                            double level = RasterizeUtils.ComputeMipMapLevel(ii, jj, vert1, vert2, vert3, sampleTex2D, isOrthographic);
                             float levelRate = RasterizeUtils.GetFloat(level);
                             int level1 = (int)level;
-                            float[] texel = RasterizeUtils.SampleTexel(ii, jj, vert1, vert2, vert3, sampleTex2D);
+                            float[] texel = RasterizeUtils.SampleTexel(ii, jj, vert1, vert2, vert3, sampleTex2D, isOrthographic);
                             Color c1 = RasterizeUtils.GetColorByBilinear(texel, sampleTex2D, level1);
                             Color c2 = RasterizeUtils.GetColorByBilinear(texel, sampleTex2D, level1 + 1);
                             Color mainTexColor = Color.Lerp(c1, c2, levelRate);

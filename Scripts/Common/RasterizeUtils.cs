@@ -104,14 +104,14 @@ public class RasterizeUtils
     public static bool IsInsideTriangle(float x, float y, Vertex vert1, Vertex vert2, Vertex vert3, bool back = false)
     {
 
-        Vector3 v0v1 = new Vector3(vert2.vert_pixel.x - vert1.vert_pixel.x, vert2.vert_pixel.y - vert1.vert_pixel.y, 0);
-        Vector3 v1v2 = new Vector3(vert3.vert_pixel.x - vert2.vert_pixel.x, vert3.vert_pixel.y - vert2.vert_pixel.y, 0);
-        Vector3 v2v0 = new Vector3(vert1.vert_pixel.x - vert3.vert_pixel.x, vert1.vert_pixel.y - vert3.vert_pixel.y, 0);
+        Vector3 v0v1 = new Vector3(vert2.vert_pixel_coor.x - vert1.vert_pixel_coor.x, vert2.vert_pixel_coor.y - vert1.vert_pixel_coor.y, 0);
+        Vector3 v1v2 = new Vector3(vert3.vert_pixel_coor.x - vert2.vert_pixel_coor.x, vert3.vert_pixel_coor.y - vert2.vert_pixel_coor.y, 0);
+        Vector3 v2v0 = new Vector3(vert1.vert_pixel_coor.x - vert3.vert_pixel_coor.x, vert1.vert_pixel_coor.y - vert3.vert_pixel_coor.y, 0);
 
 
-        Vector3 v0p = new Vector3(x - vert1.vert_pixel.x, y - vert1.vert_pixel.y, 0);
-        Vector3 v1p = new Vector3(x - vert2.vert_pixel.x, y - vert2.vert_pixel.y, 0);
-        Vector3 v2p = new Vector3(x - vert3.vert_pixel.x, y - vert3.vert_pixel.y, 0);
+        Vector3 v0p = new Vector3(x - vert1.vert_pixel_coor.x, y - vert1.vert_pixel_coor.y, 0);
+        Vector3 v1p = new Vector3(x - vert2.vert_pixel_coor.x, y - vert2.vert_pixel_coor.y, 0);
+        Vector3 v2p = new Vector3(x - vert3.vert_pixel_coor.x, y - vert3.vert_pixel_coor.y, 0);
 
         if (back)
         {
@@ -136,14 +136,14 @@ public class RasterizeUtils
 
     public static Vector3 BarycentricCoordinate(float x, float y, Vertex vert1, Vertex vert2, Vertex vert3)
     {
-        Vector3 v1v2 = new Vector3(vert2.vert_pixel.x - vert1.vert_pixel.x, vert2.vert_pixel.y - vert1.vert_pixel.y, 0);
-        Vector3 v2v3 = new Vector3(vert3.vert_pixel.x - vert2.vert_pixel.x, vert3.vert_pixel.y - vert2.vert_pixel.y, 0);
-        Vector3 v3v1 = new Vector3(vert1.vert_pixel.x - vert3.vert_pixel.x, vert1.vert_pixel.y - vert3.vert_pixel.y, 0);
+        Vector3 v1v2 = new Vector3(vert2.vert_pixel_coor.x - vert1.vert_pixel_coor.x, vert2.vert_pixel_coor.y - vert1.vert_pixel_coor.y, 0);
+        Vector3 v2v3 = new Vector3(vert3.vert_pixel_coor.x - vert2.vert_pixel_coor.x, vert3.vert_pixel_coor.y - vert2.vert_pixel_coor.y, 0);
+        Vector3 v3v1 = new Vector3(vert1.vert_pixel_coor.x - vert3.vert_pixel_coor.x, vert1.vert_pixel_coor.y - vert3.vert_pixel_coor.y, 0);
 
 
-        Vector3 v1p = new Vector3(x - vert1.vert_pixel.x, y - vert1.vert_pixel.y, 0);
-        Vector3 v2p = new Vector3(x - vert2.vert_pixel.x, y - vert2.vert_pixel.y, 0);
-        Vector3 v3p = new Vector3(x - vert3.vert_pixel.x, y - vert3.vert_pixel.y, 0);
+        Vector3 v1p = new Vector3(x - vert1.vert_pixel_coor.x, y - vert1.vert_pixel_coor.y, 0);
+        Vector3 v2p = new Vector3(x - vert2.vert_pixel_coor.x, y - vert2.vert_pixel_coor.y, 0);
+        Vector3 v3p = new Vector3(x - vert3.vert_pixel_coor.x, y - vert3.vert_pixel_coor.y, 0);
 
         // 因为v0v1v2,p的z坐标都是0，叉乘向量的x、y是0，直接取z当作模长
         float area_v2v3p = Mathf.Abs(Vector3.Cross(v2v3, v2p).z) / 2;
@@ -154,12 +154,11 @@ public class RasterizeUtils
         return new Vector3(area_v2v3p / area_v1v2v3, area_v3v1p / area_v1v2v3, area_v1v2p / area_v1v2v3);
     }
 
-    public static double ComputeMipMapLevel(float x, float y, Vertex v1, Vertex v2, Vertex v3,Texture2D sampleTex2D)
+    public static double ComputeMipMapLevel(float x, float y, Vertex v1, Vertex v2, Vertex v3,Texture2D sampleTex2D, bool isOrthographic)
     {
-
-        float[] s0 = SampleTexel(x, y, v1, v2, v3, sampleTex2D);
-        float[] s1 = SampleTexel(x + 1, y, v1, v2, v3, sampleTex2D);
-        float[] s2 = SampleTexel(x, y + 1, v1, v2, v3, sampleTex2D);
+        float[] s0 = SampleTexel(x, y, v1, v2, v3, sampleTex2D, isOrthographic);
+        float[] s1 = SampleTexel(x + 1, y, v1, v2, v3, sampleTex2D, isOrthographic);
+        float[] s2 = SampleTexel(x, y + 1, v1, v2, v3, sampleTex2D, isOrthographic);
 
         double dx = s1[0] - s0[0]; // 0 width 1 height
         double dy = s1[1] - s0[1];
@@ -181,17 +180,28 @@ public class RasterizeUtils
     }
 
 
-    public static float[] SampleTexel(float x, float y, Vertex v1, Vertex v2, Vertex v3, Texture2D sampleTex2D)
+    public static float[] SampleTexel(float x, float y, Vertex v1, Vertex v2, Vertex v3, Texture2D sampleTex2D, bool isOrthographic)
     {
         float[] f = new float[2];
-        // 计算重心坐标
-        Vector3 barycentricCoordinate = BarycentricCoordinate(x,y, v1, v2, v3);
-        // 计算该像素在观察空间的深度值:观察空间中的z的倒数在屏幕空间是线性的，所以用重心坐标可以插值z的倒数，再进行转换求出该像素的观察空间中的深度
-        float z_view = 1.0f / (barycentricCoordinate.x / v1.vert_proj.w + barycentricCoordinate.y / v2.vert_proj.w + barycentricCoordinate.z / v3.vert_proj.w);
 
-        Vector2 uv = z_view * (v1.uv / v1.vert_view.z * barycentricCoordinate.x +
-                                v2.uv / v2.vert_view.z * barycentricCoordinate.y +
-                                v3.uv / v3.vert_view.z * barycentricCoordinate.z);
+        Vector3 barycentricCoordinate = BarycentricCoordinate(x,y, v1, v2, v3);
+
+        Vector2 uv;
+        if (isOrthographic)
+        {
+            uv = v1.uv * barycentricCoordinate.x +
+                 v2.uv * barycentricCoordinate.y +
+                 v3.uv * barycentricCoordinate.z;
+        }
+        else
+        {
+            float z_view = 1.0f / (barycentricCoordinate.x / v1.vert_proj_coor.w + barycentricCoordinate.y / v2.vert_proj_coor.w + barycentricCoordinate.z / v3.vert_proj_coor.w);
+
+            uv = z_view * (v1.uv / v1.vert_view_coor.z * barycentricCoordinate.x +
+                           v2.uv / v2.vert_view_coor.z * barycentricCoordinate.y +
+                           v3.uv / v3.vert_view_coor.z * barycentricCoordinate.z);
+        }
+        
         float width = uv.x * sampleTex2D.width;
         float height = uv.y * sampleTex2D.height;
         f[0] = width;
@@ -227,7 +237,6 @@ public class RasterizeUtils
         Color c3c4 = Color.Lerp(c3, c4, fw);
         Color c1c2c3c4 = Color.Lerp(c1c2, c3c4, fh);
         return c1c2c3c4;
-        //
     }
 
 
@@ -239,7 +248,6 @@ public class RasterizeUtils
         Vector3[] normals = meshFilter.mesh.normals;
         Vector4[] tangents = meshFilter.mesh.tangents;
         Color[] colors = meshFilter.mesh.colors;
-
 
         Vertex[] vertexArray = new Vertex[vertices.Length];
         if (colors.Length > 0)

@@ -4,22 +4,22 @@ using UnityEngine;
 
 public class Vertex 
 {
-    public Vector3 vert_pos;
+    public Vector3 vert_coor;
     public Vector2 uv;
     public Vector3 normal;
     public Vector4 tangent;
     public Color color;
 
-    public Vector3 vert_world;
-    public Vector4 vert_view;
-    public Vector4 vert_proj;
+    public Vector3 vert_world_coor;
+    public Vector4 vert_view_coor;
+    public Vector4 vert_proj_coor;
 
-    public Vector3 vert_ndc;
-    public Vector3 vert_viewport;
-    public Vector2 vert_pixel;
+    public Vector3 vert_ndc_coor;
+    public Vector3 vert_viewport_coor;
+    public Vector2 vert_pixel_coor;
     public Vertex(Vector3 _vert_pos, Vector2 _uv, Vector3 _normal, Vector4 _tangent, Color _color)
     {
-        vert_pos = _vert_pos;
+        vert_coor = _vert_pos;
         uv = _uv;
         normal = _normal;
         tangent = _tangent;
@@ -29,28 +29,28 @@ public class Vertex
 
     public void UNITY_MATRIX_MVP(Matrix4x4 model,Matrix4x4 view, Matrix4x4 projection)
     {
-        vert_world = model.MultiplyPoint(vert_pos);
-        vert_view = view.MultiplyPoint(vert_world);
-        vert_view.w = 1;
-        vert_proj = projection * vert_view;
+        vert_world_coor = model.MultiplyPoint(vert_coor);
+        vert_view_coor = view.MultiplyPoint(vert_world_coor);
+        vert_view_coor.w = 1;
+        vert_proj_coor = projection * vert_view_coor;
     }
 
 
     public void UNITY_NDC()
     {
-        vert_ndc = new Vector3(vert_proj.x / vert_proj.w, vert_proj.y / vert_proj.w, vert_proj.z / vert_proj.w);
+        vert_ndc_coor = new Vector3(vert_proj_coor.x / vert_proj_coor.w, vert_proj_coor.y / vert_proj_coor.w, vert_proj_coor.z / vert_proj_coor.w);
     }
 
 
     public void UNITY_TRANSFER_VIEWPORT()
     {
-        vert_viewport = new Vector3((vert_ndc.x + 1) / 2, (vert_ndc.y + 1) / 2, 0);
+        vert_viewport_coor = new Vector3((vert_ndc_coor.x + 1) / 2, (vert_ndc_coor.y + 1) / 2, 0);
     }
 
 
     public void UNITY_TRANSFER_PIXEL()
     {
-        vert_pixel = new Vector3(vert_viewport.x * Screen.width, vert_viewport.y * Screen.height);
+        vert_pixel_coor = new Vector2(vert_viewport_coor.x * Screen.width, vert_viewport_coor.y * Screen.height);
     }
 
 

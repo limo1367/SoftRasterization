@@ -211,27 +211,28 @@ public class RasterizeUtils
 
     public static Color GetColorByBilinear(float[] texel, Texture2D sampleTex2D ,int level = 0)
     {
-        
-        int texWidth = (int)texel[0];
-        int texHeight = (int)texel[1];
+        int sampleTexelX = (int)texel[0];
+        int sampleTexelY = (int)texel[1];
 
         float fw = GetFloat(texel[0]);
         float fh = GetFloat(texel[1]);
 
-        texWidth = texWidth / (int)Math.Pow(2, level);
-        texHeight = texHeight / (int)Math.Pow(2, level);
+        int scale = (int)Math.Pow(2, level);
 
-        int sampleWidthMipMap = sampleTex2D.width / (int)Math.Pow(2, level);
-        int sampleHeighthMipMap = sampleTex2D.height / (int)Math.Pow(2, level);
+        sampleTexelX = (int)(sampleTexelX / scale);
+        sampleTexelY = (int)(sampleTexelY / scale);
 
-        int dx = texWidth + 1 > sampleWidthMipMap ? sampleWidthMipMap - 1 : texWidth;
-        int dxx = texWidth + 2 > sampleWidthMipMap ? sampleWidthMipMap - 2 : texWidth;
-        int dy = texHeight + 1 > sampleHeighthMipMap ? sampleHeighthMipMap - 1 : texHeight;
-        int dyy = texHeight + 2 > sampleHeighthMipMap ? sampleHeighthMipMap - 2 : texHeight;
-        Color c1 = sampleTex2D.GetPixels(dx, dy, 1, 1, level)[0];
-        Color c2 = sampleTex2D.GetPixels(dxx + 1, dy, 1, 1, level)[0];
-        Color c3 = sampleTex2D.GetPixels(dx, dyy + 1, 1, 1, level)[0];
-        Color c4 = sampleTex2D.GetPixels(dxx + 1, dyy + 1, 1, 1, level)[0];
+        int sampleSizeTexelX = (int)(sampleTex2D.width / scale) - 1;
+        int sampleSizeTexelY = (int)(sampleTex2D.height / scale) - 1;
+
+        int dx = sampleTexelX >= sampleSizeTexelX ? sampleSizeTexelX - 1 : sampleTexelX;
+        int dy = sampleTexelY >= sampleSizeTexelY ? sampleSizeTexelY - 1 : sampleTexelY;
+
+        Color[] colors = sampleTex2D.GetPixels(dx, dy, 2, 2,level);
+        Color c1 = colors[0];
+        Color c2 = colors[1];
+        Color c3 = colors[2];
+        Color c4 = colors[3];
 
         Color c1c2 = Color.Lerp(c1, c2, fw);
         Color c3c4 = Color.Lerp(c3, c4, fw);

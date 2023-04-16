@@ -221,23 +221,45 @@ public class RasterizeUtils
 
         sampleTexelX = (int)(sampleTexelX / scale);
         sampleTexelY = (int)(sampleTexelY / scale);
-
-        int sampleSizeTexelX = (int)(sampleTex2D.width / scale) - 1;
-        int sampleSizeTexelY = (int)(sampleTex2D.height / scale) - 1;
+		
+		int sampleSizeWidth = (int)(sampleTex2D.width / scale);
+        int sampleSizeHeight = (int)(sampleTex2D.height / scale);
+		
+        int sampleSizeTexelX = sampleSizeWidth - 1;
+        int sampleSizeTexelY = sampleSizeHeight - 1;
 
         int dx = sampleTexelX >= sampleSizeTexelX ? sampleSizeTexelX - 1 : sampleTexelX;
         int dy = sampleTexelY >= sampleSizeTexelY ? sampleSizeTexelY - 1 : sampleTexelY;
+		//Debug.LogError(sampleSizeWidth + "___" + sampleSizeHeight + "___" + sampleTexelX + "___" + sampleTexelY + "___" + dx + "___" + dy + "___" + level);
+		int simpleCount;
+		if(sampleSizeWidth == sampleSizeHeight && sampleSizeWidth == 1)
+		{
+			simpleCount = 1;
+			dx = 0;
+			dy = 0;
+		}
+		else
+			simpleCount = 2;
+		
+		Color result;
+        Color[] colors = sampleTex2D.GetPixels(dx, dy, simpleCount, simpleCount,level);
+		if(colors.Length == 1)
+		{
+			result = colors[0];
+		}
+		else
+		{
+			Color c1 = colors[0];
+			Color c2 = colors[1];
+			Color c3 = colors[2];
+			Color c4 = colors[3];
 
-        Color[] colors = sampleTex2D.GetPixels(dx, dy, 2, 2,level);
-        Color c1 = colors[0];
-        Color c2 = colors[1];
-        Color c3 = colors[2];
-        Color c4 = colors[3];
-
-        Color c1c2 = Color.Lerp(c1, c2, fw);
-        Color c3c4 = Color.Lerp(c3, c4, fw);
-        Color c1c2c3c4 = Color.Lerp(c1c2, c3c4, fh);
-        return c1c2c3c4;
+			Color c1c2 = Color.Lerp(c1, c2, fw);
+			Color c3c4 = Color.Lerp(c3, c4, fw);
+			result = Color.Lerp(c1c2, c3c4, fh);
+		}
+       
+        return result;
     }
 
 

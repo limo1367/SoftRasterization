@@ -15,11 +15,22 @@ public class LightShader
     public Color diffuse;
     public Color specular;
     public Color ambient;
-    public LightShader(Light ambientL,Light directL)
+    public LightShader(GameObject lightRoot)
     {
-        ambientLight = ambientL;
-        directionLight = directL;
-
+		Light[] lights = lightRoot.transform.GetComponentsInChildren<Light>();
+		for(int i = 0; i < lights.Length;i++)
+		{
+			Light light = lights[i];
+			if(light.gameObject.name.ToLower().Contains("ambient"))
+			{
+				ambientLight = light;
+			}
+			else if(light.gameObject.name.ToLower().Contains("direction"))
+			{
+				directionLight = light;
+			}
+		}	
+		
         OnAmbient();
     }
 

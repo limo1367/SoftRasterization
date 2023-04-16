@@ -36,10 +36,10 @@ public class RasterizeForDeferredRender : MonoBehaviour
         sampleTex2D = modelProperty.albedo;
 
         main_camera = GameObject.Find("MainCamera").GetComponent<Camera>();
-        Light directionLight = GameObject.Find("DirectionalLight").GetComponent<Light>();
-        Light ambientLight = GameObject.Find("AmbientLight").GetComponent<Light>();
+		
+		GameObject lightRoot = GameObject.Find("LightRoot");
 
-        lightShader = new LightShader(ambientLight, directionLight);
+        lightShader = new LightShader(lightRoot);
         frameBuffer = new FrameBuffer(Screen.width, Screen.height);
 
         MeshFilter[] gameObjectMeshs = GetComponentsInChildren<MeshFilter>();

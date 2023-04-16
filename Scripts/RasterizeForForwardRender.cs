@@ -41,10 +41,9 @@ public class RasterizeForForwardRender : MonoBehaviour
         sampleTex2D = modelProperty.albedo;
 
         main_camera = GameObject.Find("MainCamera").GetComponent<Camera>();
-        Light directionLight = GameObject.Find("DirectionalLight").GetComponent<Light>();
-        Light ambientLight = GameObject.Find("AmbientLight").GetComponent<Light>();
-
-        lightShader = new LightShader(ambientLight, directionLight);
+       
+		GameObject lightRoot = GameObject.Find("LightRoot");
+        lightShader = new LightShader(lightRoot);
         frameBuffer = new FrameBuffer(Screen.width, Screen.height);
 
         MeshFilter[] gameObjectMeshs = GetComponentsInChildren<MeshFilter>();

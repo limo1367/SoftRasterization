@@ -7,6 +7,7 @@ public class LightShader
     public Light ambientLight;
     public Light directionLight;
 	public Light[] pointLightArray;
+	public Light[] pointLightForViewArray;
 
     public Vector3 normal;
     public Vector3 world_coor;
@@ -61,11 +62,14 @@ public class LightShader
 		ambient = ambientLight.color;
     }
 	
-	 public void OnLightDeferredShader()
+	 public void OnLightDeferredShader(int x,int y,FrameBuffer frameBuffer)
     {
 		diffuse = Color.black;
 		specular = Color.black;
 		
+		normal = frameBuffer.GetNormalBuffer(x, y);
+        world_coor = frameBuffer.GetWorldCoorBuffer(x, y);
+                
         diffuse += RasterizeUtils.OnDiffuse(directionLight,world_coor,normal);
         specular += RasterizeUtils.OnSpecular(directionLight,world_coor,normal,main_view_world_coor);
 		

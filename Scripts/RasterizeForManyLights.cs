@@ -51,7 +51,8 @@ public class RasterizeForManyLights : MonoBehaviour
             MeshFilter mesh = gameObjectMeshs[i];
             OnDeferredRender(mesh);
         }
-
+		
+		lightShader.main_view_world_coor = main_camera.transform.position;
         for (int i = 0; i < Screen.width; i++)
         {
             for (int j = 0; j < Screen.height; j++)
@@ -60,14 +61,10 @@ public class RasterizeForManyLights : MonoBehaviour
                 if (depth < 0) continue;
 
                 Color color = frameBuffer.GetColorBuffer(i, j);
-                lightShader.normal = frameBuffer.GetNormalBuffer(i, j);
-                lightShader.world_coor = frameBuffer.GetWorldCoorBuffer(i, j);
-                lightShader.main_view_world_coor = main_camera.transform.position;
-                lightShader.OnLightDeferredShader();
+                lightShader.OnLightDeferredShader(i, j,frameBuffer);
 
                 Color pixelColor = lightShader.ambient + lightShader.diffuse * color + lightShader.specular;
                 rasterizeTex2D.SetPixel(i, j, pixelColor);
-                
             }
         }
 

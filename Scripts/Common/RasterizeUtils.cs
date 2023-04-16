@@ -278,6 +278,34 @@ public class RasterizeUtils
         float c = (float)(a - b);
         return c;
     }
+	
+	public static Color OnDiffuse(Light light,Vector3 shaderPointCoor,Vector3 shaderPointNormal)
+    {
+        Color diffuse = Color.black;
+        Color lightColor = light.color;
+        Vector3 lightCoor = light.transform.position;
+        Vector3 lightDir = (lightCoor - shaderPointCoor).normalized;
+        diffuse += lightColor * Mathf.Max(0, Vector3.Dot(lightDir, shaderPointNormal));
+		return diffuse;
+
+    }
+
+    public static Color OnSpecular(Light light,Vector3 shaderPointCoor,Vector3 shaderPointNormal,Vector3 viewWorldCoor)
+    {
+        Color specular = Color.black;
+
+        Vector3 lightCoor = light.transform.position;
+        Vector3 lightDir = lightCoor - shaderPointCoor;
+
+        float distance = Vector3.Distance(lightCoor, shaderPointCoor);
+        float attenuation = 1 / distance;
+
+        Vector3 viewDir = viewWorldCoor - shaderPointCoor;
+        Vector3 h = (lightDir + viewDir).normalized;
+
+        specular += Color.white * Mathf.Max(0, Mathf.Pow(Vector3.Dot(h, shaderPointNormal), 64)) * attenuation;
+		return specular;
+    }
 
 }
 

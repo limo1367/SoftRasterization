@@ -63,7 +63,7 @@ public class RasterizeForDeferredRender : MonoBehaviour
                 lightShader.normal = frameBuffer.GetNormalBuffer(i, j);
                 lightShader.world_coor = frameBuffer.GetWorldCoorBuffer(i, j);
                 lightShader.main_view_world_coor = main_camera.transform.position;
-                lightShader.OnLightProcess();
+                lightShader.OnLightDeferredShader();
 
                 Color pixelColor = lightShader.ambient + lightShader.diffuse * color + lightShader.specular;
                 rasterizeTex2D.SetPixel(i, j, pixelColor);

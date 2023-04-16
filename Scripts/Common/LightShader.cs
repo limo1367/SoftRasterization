@@ -31,46 +31,30 @@ public class LightShader
 			}
 		}	
 		
-        OnAmbient();
+       
     }
 
 
-    public void OnLightProcess()
+    public void OnLightForwardShader()
     {
-        OnDiffuse(directionLight);
-        OnSpecular(directionLight);
+		diffuse = Color.black;
+		specular = Color.black;
+		
+        diffuse += RasterizeUtils.OnDiffuse(directionLight,world_coor,normal);
+        specular += RasterizeUtils.OnSpecular(directionLight,world_coor,normal,main_view_world_coor);
+		
+		ambient = ambientLight.color;
     }
-
-    private void OnDiffuse(Light light)
+	
+	 public void OnLightDeferredShader()
     {
-        diffuse = Color.black;
-        Color lightColor = light.color;
-        Vector3 lightPos = light.transform.position;
-        Vector3 lightDir = (lightPos - world_coor).normalized;
-        diffuse += lightColor * Mathf.Max(0, Vector3.Dot(lightDir, normal));
-
-    }
-
-    private void OnSpecular(Light light)
-    {
-        specular = Color.black;
-
-        Vector3 lightPos = light.transform.position;
-        Vector3 lightDir = lightPos - world_coor;
-
-        float distance = Vector3.Distance(lightPos, world_coor);
-        float attenuation = 1 / distance;
-
-        Vector3 viewDir = main_view_world_coor - world_coor;
-        Vector3 h = (lightDir + viewDir).normalized;
-
-        specular += Color.white * Mathf.Max(0, Mathf.Pow(Vector3.Dot(h, normal), 64)) * attenuation;
-    }
-
-    private void OnAmbient()
-    {
-        ambient = ambientLight.color;
-
+		diffuse = Color.black;
+		specular = Color.black;
+		
+        diffuse += RasterizeUtils.OnDiffuse(directionLight,world_coor,normal);
+        specular += RasterizeUtils.OnSpecular(directionLight,world_coor,normal,main_view_world_coor);
+		
+		ambient = ambientLight.color;
     }
 
 

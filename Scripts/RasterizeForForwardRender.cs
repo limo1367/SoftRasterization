@@ -214,7 +214,7 @@ public class RasterizeForForwardRender : MonoBehaviour
                             lightShader.normal = main_model.inverse.transpose.MultiplyVector(normal);
                             lightShader.world_coor = worldCoor;
                             lightShader.main_view_world_coor = main_camera.transform.position;
-                            lightShader.OnLightProcess();
+                            lightShader.OnLightForwardShader();
 
                             Color pixelColor = lightShader.ambient + lightShader.diffuse * mainTexColor + lightShader.specular;
                             rasterizeTex2D.SetPixel(ii, jj, pixelColor);
@@ -271,20 +271,20 @@ public class RasterizeForForwardRender : MonoBehaviour
 
             lightShader.normal = main_model.inverse.transpose.MultiplyVector(vert1.normal);
             lightShader.world_coor = vert1.vert_world_coor;
-            lightShader.OnLightProcess();
+            lightShader.OnLightForwardShader();
             Color vert1_diffuse = lightShader.diffuse;
             Color vert1_specular = lightShader.specular;
 
             lightShader.normal = main_model.inverse.transpose.MultiplyVector(vert2.normal);
             lightShader.world_coor = vert2.vert_world_coor;
-            lightShader.OnLightProcess();
+            lightShader.OnLightForwardShader();
             Color vert2_diffuse = lightShader.diffuse;
             Color vert2_specular = lightShader.specular;
 
 
             lightShader.normal = main_model.inverse.transpose.MultiplyVector(vert3.normal);
             lightShader.world_coor = vert3.vert_world_coor;
-            lightShader.OnLightProcess();
+            lightShader.OnLightForwardShader();
             Color vert3_diffuse = lightShader.diffuse;
             Color vert3_specular = lightShader.specular;
 

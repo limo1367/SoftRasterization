@@ -301,14 +301,27 @@ public class RasterizeUtils
         return c;
     }
 	
-	public static Color OnDiffuse(Light light,Vector3 shaderPointCoor,Vector3 shaderPointNormal)
+	public static Color OnDiffuse(Light light,Vector3 shaderPointCoor,Vector3 shaderPointNormal,bool attenuated = true)
     {
         Color diffuse = Color.black;
         Color lightColor = light.color;
         Vector3 lightCoor = light.transform.position;
         Vector3 lightDir = (lightCoor - shaderPointCoor).normalized;
-        diffuse += lightColor * Mathf.Max(0, Vector3.Dot(lightDir, shaderPointNormal));
-		return diffuse;
+
+        Color color;
+        if (attenuated)
+        {
+            float dis = Vector3.Distance(lightCoor, shaderPointCoor);
+            float attenuation = 1 / (dis * dis);
+            color = lightColor * Mathf.Max(0, Vector3.Dot(lightDir, shaderPointNormal)) * attenuation * light.intensity;
+        }
+        else
+        {
+            color = lightColor * Mathf.Max(0, Vector3.Dot(lightDir, shaderPointNormal));
+        }
+        diffuse += color;
+
+        return diffuse;
 
     }
 
@@ -327,6 +340,39 @@ public class RasterizeUtils
 
         specular += Color.white * Mathf.Max(0, Mathf.Pow(Vector3.Dot(h, shaderPointNormal), 64)) * attenuation;
 		return specular;
+    }
+
+
+    public static Light[] GetManyLightsToObject(GameObject obj,Light[] lights,int limitCount = 4)
+    {
+        List<Light> tempList1 = new List<Light>();
+        List<Light> tempList2 = new List<Light>();
+        AABB aabb = new AABB(obj.transform);
+        for (int i= 0; i < lights.Length; i++)
+        {
+            Light light = lights[i];
+            Vector3 nPoint = aabb.NearestPointToPoint(light.transform.position);
+            float dis = Vector3.Distance(nPoint, light.transform.position);
+            if (dis < light.range)
+                tempList1.Add(light);
+        }
+
+        tempList1.Sort(delegate (Light light1, Light light2)
+            {
+                float dis1 = Vector3.Distance(light1.transform.position, obj.transform.position);
+                float dis2 = Vector3.Distance(light2.transform.position, obj.transform.position);
+                return dis2.CompareTo(dis1);
+            }
+        );
+
+        for (int i = 0; i < tempList1.Count; i++)
+        {
+            if (i >= limitCount) break;
+            Light light = tempList1[i];
+            tempList2.Add(light);
+        }
+
+        return tempList2.ToArray();
     }
 
 }

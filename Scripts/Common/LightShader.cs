@@ -7,7 +7,7 @@ public class LightShader
     public Light ambientLight;
     public Light directionLight;
 	public Light[] pointLightArray;
-	public Light[] pointLightForViewArray;
+	public Light[] lightForViewArray;
 
     public Vector3 normal;
     public Vector3 world_coor;
@@ -38,9 +38,7 @@ public class LightShader
 			}
 		}	
 		pointLightArray = tempPointLightList.ToArray();
-		
-		
-       
+
     }
 
 
@@ -49,12 +47,12 @@ public class LightShader
 		diffuse = Color.black;
 		specular = Color.black;
 		
-        diffuse += RasterizeUtils.OnDiffuse(directionLight,world_coor,normal);
+        diffuse += RasterizeUtils.OnDiffuse(directionLight,world_coor,normal,false);
         specular += RasterizeUtils.OnSpecular(directionLight,world_coor,normal,main_view_world_coor);
 		
-		for(int i = 0; i < pointLightArray.Length; i++)
+		for(int i = 0; i < lightForViewArray.Length; i++)
 		{
-			Light pointLight = pointLightArray[i];
+			Light pointLight = lightForViewArray[i];
 			diffuse += RasterizeUtils.OnDiffuse(pointLight,world_coor,normal);
 			specular += RasterizeUtils.OnSpecular(pointLight,world_coor,normal,main_view_world_coor);
 		}
@@ -70,12 +68,12 @@ public class LightShader
 		normal = frameBuffer.GetNormalBuffer(x, y);
         world_coor = frameBuffer.GetWorldCoorBuffer(x, y);
                 
-        diffuse += RasterizeUtils.OnDiffuse(directionLight,world_coor,normal);
+        diffuse += RasterizeUtils.OnDiffuse(directionLight,world_coor,normal,false);
         specular += RasterizeUtils.OnSpecular(directionLight,world_coor,normal,main_view_world_coor);
 		
-		for(int i = 0; i < pointLightArray.Length; i++)
+		for(int i = 0; i < lightForViewArray.Length; i++)
 		{
-			Light pointLight = pointLightArray[i];
+			Light pointLight = lightForViewArray[i];
 			diffuse += RasterizeUtils.OnDiffuse(pointLight,world_coor,normal);
 			specular += RasterizeUtils.OnSpecular(pointLight,world_coor,normal,main_view_world_coor);
 		}

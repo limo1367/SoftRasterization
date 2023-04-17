@@ -53,6 +53,9 @@ public class RasterizeForForwardRender : MonoBehaviour
         for (int i = 0; i < gameObjectMeshs.Length; i++)
         {
             MeshFilter mesh = gameObjectMeshs[i];
+
+            OnApplication(mesh.gameObject);
+
             if (lightProcessType == "PerVert")
                 OnForwardRenderForPerVert(mesh);
             else
@@ -466,5 +469,11 @@ public class RasterizeForForwardRender : MonoBehaviour
                 rasterizeTex2D.SetPixel(i, j, Color.white);
             }
         }
+    }
+
+    private void OnApplication(GameObject obj)
+    {
+        Light[] lights = lightShader.pointLightArray;
+        lightShader.lightForViewArray = RasterizeUtils.GetManyLightsToObject(obj, lights);
     }
 }

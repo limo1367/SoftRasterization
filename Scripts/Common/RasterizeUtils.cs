@@ -313,6 +313,7 @@ public class RasterizeUtils
         {
             float dis = Vector3.Distance(lightCoor, shaderPointCoor);
             float attenuation = 1 / (dis * dis);
+           
             color = lightColor * Mathf.Max(0, Vector3.Dot(lightDir, shaderPointNormal)) * attenuation * light.intensity;
         }
         else

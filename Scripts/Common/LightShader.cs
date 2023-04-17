@@ -60,8 +60,8 @@ public class LightShader
 		ambient = ambientLight.color;
     }
 	
-	 public void OnLightDeferredShader(int x,int y,FrameBuffer frameBuffer)
-    {
+	public void OnLightDeferredShader(int x,int y,FrameBuffer frameBuffer)
+	{
 		diffuse = Color.black;
 		specular = Color.black;
 		
@@ -70,14 +70,9 @@ public class LightShader
                 
         diffuse += RasterizeUtils.OnDiffuse(directionLight,world_coor,normal,false);
         specular += RasterizeUtils.OnSpecular(directionLight,world_coor,normal,main_view_world_coor);
-		
-		for(int i = 0; i < lightForViewArray.Length; i++)
-		{
-			Light pointLight = lightForViewArray[i];
-			diffuse += RasterizeUtils.OnDiffuse(pointLight,world_coor,normal);
-			specular += RasterizeUtils.OnSpecular(pointLight,world_coor,normal,main_view_world_coor);
-		}
-		
+
+		diffuse += frameBuffer.GetLightsColorDiffuseBuffer(x,y);
+
 		ambient = ambientLight.color;
     }
 

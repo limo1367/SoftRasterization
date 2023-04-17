@@ -50,10 +50,16 @@ public class RasterizeForDeferredRender : MonoBehaviour
         {
             MeshFilter mesh = gameObjectMeshs[i];
             OnApplication(mesh.gameObject);
+        }
+
+        lightShader.main_view_world_coor = main_camera.transform.position;
+
+        for (int i = 0; i < gameObjectMeshs.Length; i++)
+        {
+            MeshFilter mesh = gameObjectMeshs[i];
             OnDeferredRender(mesh);
         }
 		
-		lightShader.main_view_world_coor = main_camera.transform.position;
         for (int i = 0; i < Screen.width; i++)
         {
             for (int j = 0; j < Screen.height; j++)

@@ -72,6 +72,7 @@ public class LightShader
         specular += RasterizeUtils.OnSpecular(directionLight,world_coor,normal,main_view_world_coor);
 
 		diffuse += frameBuffer.GetLightsColorDiffuseBuffer(x,y);
+		specular += frameBuffer.GetLightsColorSpecularBuffer(x, y);
 
 		ambient = ambientLight.color;
     }

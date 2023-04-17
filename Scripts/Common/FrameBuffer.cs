@@ -11,6 +11,7 @@ public class FrameBuffer
     private Texture2D normalBufferTex;
     private Texture2D worldCoorBufferTex;
     private Texture2D lightsColorDiffuseBufferTex;
+    private Texture2D lightsColorSpecularBufferTex;
 
     public FrameBuffer(int width, int height)
     {
@@ -21,6 +22,7 @@ public class FrameBuffer
         normalBufferTex = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
         worldCoorBufferTex = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
         lightsColorDiffuseBufferTex = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
+        lightsColorSpecularBufferTex = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
         InitBuffer();
 
 
@@ -82,6 +84,17 @@ public class FrameBuffer
         return c;
     }
 
+    public void SetLightsColorSpecularBuffer(int x, int y, Color c)
+    {
+        lightsColorSpecularBufferTex.SetPixel(x, y, c);
+    }
+
+    public Color GetLightsColorSpecularBuffer(int x, int y)
+    {
+        Color c = lightsColorSpecularBufferTex.GetPixel(x, y);
+        return c;
+    }
+
     public void Apply()
     {
         depthBufferTex.Apply();
@@ -102,6 +115,7 @@ public class FrameBuffer
                 SetNormalBuffer(i, j, Vector3.zero);
                 SetWorldCoorBuffer(i, j, Vector3.zero);
                 SetLightsColorDiffuseBuffer(i, j, Color.black);
+                SetLightsColorSpecularBuffer(i, j, Color.black);
             }
         }
     }

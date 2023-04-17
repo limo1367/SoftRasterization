@@ -572,8 +572,12 @@ public class RasterizeForManyLights : MonoBehaviour
                                 Color colorBuffer = frameBuffer.GetLightsColorDiffuseBuffer(ii, jj);
                                 colorBuffer += diffuseColor;
                                 frameBuffer.SetLightsColorDiffuseBuffer(ii, jj, colorBuffer);
-                            }
 
+                                Color specularColor = RasterizeUtils.OnSpecular(light, worldCoor, normal, lightShader.main_view_world_coor);
+                                Color colorBuffer2 = frameBuffer.GetLightsColorSpecularBuffer(ii, jj);
+                                colorBuffer2 += specularColor;
+                                frameBuffer.SetLightsColorSpecularBuffer(ii, jj, colorBuffer2);
+                            }
                         }
                     }
                 }

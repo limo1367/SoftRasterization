@@ -5,7 +5,7 @@ using UnityEngine.UI;
 /// <summary>
 /// «∞œÚ‰÷»æ
 /// </summary>
-public class RasterizeForHardShadow : MonoBehaviour
+public class RasterizeForSoftShadow : MonoBehaviour
 {
     Matrix4x4 main_model;
     Matrix4x4 main_view;

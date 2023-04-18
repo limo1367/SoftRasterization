@@ -466,7 +466,7 @@ public class RasterizeForForwardRender : MonoBehaviour
         {
             for (int j = 0; j < Screen.height; j++)
             {
-                rasterizeTex2D.SetPixel(i, j, Color.white);
+                rasterizeTex2D.SetPixel(i, j, Color.black);
             }
         }
     }

@@ -182,7 +182,6 @@ public class RasterizeForBase : MonoBehaviour
                             {
                                 if (depth > depthBuffer) continue;
                             }
-                            
                             frameBuffer.SetDepthBuffer(ii, jj,depth);                           
 
                             double level = RasterizeUtils.ComputeMipMapLevel(ii, jj, vert1, vert2, vert3, sampleTex2D, isOrthographic);

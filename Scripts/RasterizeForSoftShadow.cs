@@ -232,7 +232,8 @@ public class RasterizeForSoftShadow : MonoBehaviour
                             lightShader.main_view_world_coor = main_camera.transform.position;
                             lightShader.OnLightForwardShader();
 
-                            float visibleFactor = RasterizeUtils.GetVisibleFactorForHardShadow(frameBuffer, worldCoor, light_view, light_projection, direction_light_camera.orthographic);
+                            int filter = 1;
+                            float visibleFactor = RasterizeUtils.GetVisibleFactorForPCF(frameBuffer, worldCoor, light_view, light_projection, filter, direction_light_camera.orthographic);
                             Color pixelColor = (lightShader.ambient + visibleFactor * (lightShader.diffuse  + lightShader.specular)) * mainTexColor;
 
                             rasterizeTex2D.SetPixel(ii, jj, pixelColor);

@@ -408,6 +408,52 @@ public class RasterizeUtils
         }
         return visibleFactor;
     }
+
+
+    public static float GetVisibleFactorForPCF(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection,int filter, bool isOrthographic)
+    {
+        float visibleFactor;
+        int visibleCount = 0;
+        float shaderPointDepth;
+        float bias;
+        int filterSize = (filter * 2 + 1) * (filter * 2 + 1);
+
+        Vector4 view_coor = view.MultiplyPoint(shaderPointCoor);
+        view_coor.w = 1;
+        Vector4 proj_coor = projection * view_coor;
+        Vector3 ndc_coor = new Vector3(proj_coor.x / proj_coor.w, proj_coor.y / proj_coor.w, proj_coor.z / proj_coor.w);
+        Vector2 viewport_coor = new Vector2((ndc_coor.x + 1) / 2, (ndc_coor.y + 1) / 2);
+        Vector2 pixel_coor = new Vector2(viewport_coor.x * Screen.width, viewport_coor.y * Screen.height);
+        int pixel_x = (int)pixel_coor.x;
+        int pixel_y = (int)pixel_coor.y;
+
+        if (isOrthographic)
+            shaderPointDepth = view_coor.z;
+        else
+            shaderPointDepth = proj_coor.z;
+
+        bias = 0.1f;
+
+        for (int i = -1 * filter; i <= filter; i++)
+        {
+            for (int j = -1 * filter; j <= filter; j++)
+            {
+                float shadowMapDepthBuffer = frameBuffer.GetShadowMapDepthBuffer(pixel_x + i, pixel_y + j);
+                if (shaderPointDepth > shadowMapDepthBuffer + bias)
+                {
+                    visibleCount += 0;
+                }
+                else
+                {
+                    visibleCount += 1;
+                }
+
+            }
+        }
+
+        visibleFactor = visibleCount / filterSize;
+        return visibleFactor;
+    }
 }
 
 

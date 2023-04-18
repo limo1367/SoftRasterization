@@ -2,9 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-/// <summary>
-/// «∞œÚ‰÷»æ
-/// </summary>
+
 public class RasterizeForSoftShadow : MonoBehaviour
 {
     Matrix4x4 main_model;
@@ -242,11 +240,7 @@ public class RasterizeForSoftShadow : MonoBehaviour
                 }
             }
         }
-
-     
     }
-
-  
     public void OnShadowMapRender(MeshFilter mesh)
     {
         MeshFilter meshFilter = mesh;

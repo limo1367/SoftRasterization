@@ -2,9 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-/// <summary>
-/// «∞œÚ‰÷»æ
-/// </summary>
+
 public class RasterizeForHardShadow : MonoBehaviour
 {
     Matrix4x4 main_model;

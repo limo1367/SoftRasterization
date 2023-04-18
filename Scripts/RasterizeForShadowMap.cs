@@ -2,9 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-/// <summary>
-/// «∞œÚ‰÷»æ
-/// </summary>
+
 public class RasterizeForShadowMap : MonoBehaviour
 {
     Matrix4x4 main_model;
@@ -240,8 +238,6 @@ public class RasterizeForShadowMap : MonoBehaviour
                 }
             }
         }
-
-     
     }
 
   
@@ -386,8 +382,6 @@ public class RasterizeForShadowMap : MonoBehaviour
                 }
             }
         }
-
-
     }
 
     private void SetModel(Matrix4x4 model)

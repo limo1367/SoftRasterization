@@ -416,7 +416,7 @@ public class RasterizeUtils
         int visibleCount = 0;
         float shaderPointDepth;
         float bias;
-        int filterSize = (filter * 2 + 1) * (filter * 2 + 1);
+        float filterSize = (filter * 2 + 1) * (filter * 2 + 1);
 
         Vector4 view_coor = view.MultiplyPoint(shaderPointCoor);
         view_coor.w = 1;

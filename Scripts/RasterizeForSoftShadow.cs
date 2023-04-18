@@ -25,6 +25,8 @@ public class RasterizeForSoftShadow : MonoBehaviour
     FrameBuffer frameBuffer;
     LightShader lightShader;
     ModelProperty modelProperty;
+
+    public string softShadowType;
    
 
     void Start()
@@ -229,9 +231,22 @@ public class RasterizeForSoftShadow : MonoBehaviour
                             lightShader.world_coor = worldCoor;
                             lightShader.main_view_world_coor = main_camera.transform.position;
                             lightShader.OnLightForwardShader();
+                            int penumbraSize ;
+                            if (softShadowType == "PCF")
+                            {
+                                penumbraSize = 1;
+                            }
+                            else if (softShadowType == "PCSS")
+                            {
+                                int lightSize = 1;
+                                penumbraSize = RasterizeUtils.GePenumbraSizeForPCSS(frameBuffer, worldCoor, light_view, light_projection, lightSize, direction_light_camera.orthographic);
+                            }
+                            else
+                            {
+                                penumbraSize = 1;
+                            }
 
-                            int filter = 1;
-                            float visibleFactor = RasterizeUtils.GetVisibleFactorForPCF(frameBuffer, worldCoor, light_view, light_projection, filter, direction_light_camera.orthographic);
+                            float visibleFactor = RasterizeUtils.GetVisibleFactorForPCF(frameBuffer, worldCoor, light_view, light_projection, penumbraSize,direction_light_camera.orthographic);
                             Color pixelColor = (lightShader.ambient + visibleFactor * (lightShader.diffuse  + lightShader.specular)) * mainTexColor;
 
                             rasterizeTex2D.SetPixel(ii, jj, pixelColor);

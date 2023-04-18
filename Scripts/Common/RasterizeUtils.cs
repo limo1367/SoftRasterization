@@ -410,13 +410,13 @@ public class RasterizeUtils
     }
 
 
-    public static float GetVisibleFactorForPCF(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection,int filter, bool isOrthographic)
+    public static float GetVisibleFactorForPCF(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection,int penumbraSize, bool isOrthographic)
     {
         float visibleFactor;
         int visibleCount = 0;
         float shaderPointDepth;
         float bias;
-        float filterSize = (filter * 2 + 1) * (filter * 2 + 1);
+        float penumbraArea = (penumbraSize * 2 + 1) * (penumbraSize * 2 + 1);
 
         Vector4 view_coor = view.MultiplyPoint(shaderPointCoor);
         view_coor.w = 1;
@@ -434,9 +434,9 @@ public class RasterizeUtils
 
         bias = 0.1f;
 
-        for (int i = -1 * filter; i <= filter; i++)
+        for (int i = -1 * penumbraSize; i <= penumbraSize; i++)
         {
-            for (int j = -1 * filter; j <= filter; j++)
+            for (int j = -1 * penumbraSize; j <= penumbraSize; j++)
             {
                 float shadowMapDepthBuffer = frameBuffer.GetShadowMapDepthBuffer(pixel_x + i, pixel_y + j);
                 if (shaderPointDepth > shadowMapDepthBuffer + bias)
@@ -451,8 +451,61 @@ public class RasterizeUtils
             }
         }
 
-        visibleFactor = visibleCount / filterSize;
+        visibleFactor = visibleCount / penumbraArea;
         return visibleFactor;
+    }
+
+    public static int GePenumbraSizeForPCSS(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, int lightSize, bool isOrthographic)
+    {
+        float shaderPointDepth;
+        int penumbraSize;
+
+        Vector4 view_coor = view.MultiplyPoint(shaderPointCoor);
+        view_coor.w = 1;
+        Vector4 proj_coor = projection * view_coor;
+        Vector3 ndc_coor = new Vector3(proj_coor.x / proj_coor.w, proj_coor.y / proj_coor.w, proj_coor.z / proj_coor.w);
+        Vector2 viewport_coor = new Vector2((ndc_coor.x + 1) / 2, (ndc_coor.y + 1) / 2);
+        Vector2 pixel_coor = new Vector2(viewport_coor.x * Screen.width, viewport_coor.y * Screen.height);
+        int pixel_x = (int)pixel_coor.x;
+        int pixel_y = (int)pixel_coor.y;
+
+        if (isOrthographic)
+            shaderPointDepth = view_coor.z;
+        else
+            shaderPointDepth = proj_coor.z;
+
+        float bias;
+        float blockerAverageDistance = 0;
+        int blockerCount = 0;
+        float blockerDistance = 0;
+
+        bias = 0.1f;
+
+        for (int i = -1 * lightSize; i <= lightSize; i++)
+        {
+            for (int j = -1 * lightSize; j <= lightSize; j++)
+            {
+                float shadowMapDepthBuffer = frameBuffer.GetShadowMapDepthBuffer(pixel_x + i, pixel_y + j);
+
+                if (shaderPointDepth > shadowMapDepthBuffer + bias)
+                {
+                    blockerCount += 1;
+                    blockerDistance += shadowMapDepthBuffer;
+                }
+            }
+        }
+
+        if (blockerCount != 0)
+        {
+            blockerAverageDistance = blockerDistance / blockerCount;
+            penumbraSize = (int)((shaderPointDepth - blockerAverageDistance) * lightSize / blockerAverageDistance );
+            if (penumbraSize <= 0) penumbraSize = 1;
+        }
+        else
+        {
+            penumbraSize = 1;
+        }
+        return penumbraSize;
     }
 }
 

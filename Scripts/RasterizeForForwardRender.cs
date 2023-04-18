@@ -48,7 +48,7 @@ public class RasterizeForForwardRender : MonoBehaviour
 
         MeshFilter[] gameObjectMeshs = GetComponentsInChildren<MeshFilter>();
 
-        ClearRasterizeTex2D();
+        ClearTexture();
 
         for (int i = 0; i < gameObjectMeshs.Length; i++)
         {
@@ -460,7 +460,7 @@ public class RasterizeForForwardRender : MonoBehaviour
     }
 
 
-    private void ClearRasterizeTex2D()
+    private void ClearTexture()
     {
         for (int i = 0; i < Screen.width; i++)
         {

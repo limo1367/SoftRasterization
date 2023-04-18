@@ -44,7 +44,7 @@ public class RasterizeForManyLights : MonoBehaviour
 
         MeshFilter[] gameObjectMeshs = GetComponentsInChildren<MeshFilter>();
 
-        ClearRasterizeTex2D();
+        ClearTexture();
 
         List<Light> viewLightList = new List<Light>();
         for (int i = 0; i < gameObjectMeshs.Length; i++)
@@ -302,7 +302,7 @@ public class RasterizeForManyLights : MonoBehaviour
     }
 
 
-    private void ClearRasterizeTex2D()
+    private void ClearTexture()
     {
         for (int i = 0; i < Screen.width; i++)
         {

@@ -233,7 +233,7 @@ public class RasterizeForShadowMap : MonoBehaviour
                             lightShader.main_view_world_coor = main_camera.transform.position;
                             lightShader.OnLightForwardShader();
 
-                            Color pixelColor = lightShader.ambient + lightShader.diffuse * mainTexColor + lightShader.specular;
+                            Color pixelColor = (lightShader.ambient + lightShader.diffuse + lightShader.specular) * mainTexColor;
                             rasterizeTex2D.SetPixel(ii, jj, pixelColor);
                         }
                     }

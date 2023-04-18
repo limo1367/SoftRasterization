@@ -35,7 +35,7 @@ public class RasterizeForHardShadow : MonoBehaviour
         GameObject RasterizeImageGameObject = CanvasGo.transform.Find("RasterizeImage").gameObject;
         GameObject ShadowMapImageGameObject = CanvasGo.transform.Find("ShadowMapImage").gameObject;
         RasterizeImageGameObject.SetActive(true);
-        ShadowMapImageGameObject.SetActive(true);
+        ShadowMapImageGameObject.SetActive(false);
 
         rasterizeImage = RasterizeImageGameObject.GetComponent<RawImage>();
         rasterizeTex2D = new Texture2D(Screen.width, Screen.height, TextureFormat.RGBA32, true);
@@ -65,8 +65,7 @@ public class RasterizeForHardShadow : MonoBehaviour
             OnShadowMapRender(mesh);
         }
 
-        OnShadowMapTexture();
-
+        //OnShadowMapTexture();
 
         for (int i = 0; i < gameObjectMeshs.Length; i++)
         {
@@ -233,7 +232,9 @@ public class RasterizeForHardShadow : MonoBehaviour
                             lightShader.main_view_world_coor = main_camera.transform.position;
                             lightShader.OnLightForwardShader();
 
-                            Color pixelColor = lightShader.ambient + lightShader.diffuse * mainTexColor + lightShader.specular;
+                            float visibleFactor = RasterizeUtils.GetVisibleFactorForHardShadow(frameBuffer, worldCoor, light_view, light_projection, direction_light_camera.orthographic);
+                            Color pixelColor = (lightShader.ambient + visibleFactor * (lightShader.diffuse  + lightShader.specular)) * mainTexColor;
+
                             rasterizeTex2D.SetPixel(ii, jj, pixelColor);
                         }
                     }

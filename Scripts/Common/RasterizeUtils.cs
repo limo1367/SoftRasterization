@@ -376,6 +376,38 @@ public class RasterizeUtils
         return tempList2.ToArray();
     }
 
+    public static float GetVisibleFactorForHardShadow(FrameBuffer frameBuffer, Vector3 shaderPointCoor,Matrix4x4 view, Matrix4x4 projection, bool isOrthographic)
+    {
+        float visibleFactor;
+        float shaderPointDepth;
+        float bias;
+        Vector4 view_coor = view.MultiplyPoint(shaderPointCoor);
+        view_coor.w = 1;
+        Vector4 proj_coor = projection * view_coor;
+        Vector3 ndc_coor = new Vector3(proj_coor.x / proj_coor.w,proj_coor.y / proj_coor.w,proj_coor.z / proj_coor.w);
+        Vector2 viewport_coor = new Vector2((ndc_coor.x + 1) / 2, (ndc_coor.y + 1) / 2);
+        Vector2 pixel_coor = new Vector2(viewport_coor.x * Screen.width, viewport_coor.y * Screen.height);
+        int pixel_x = (int)pixel_coor.x;
+        int pixel_y = (int)pixel_coor.y;
+
+        float shadowMapDepthBuffer = frameBuffer.GetShadowMapDepthBuffer(pixel_x, pixel_y);
+
+        if (isOrthographic)
+            shaderPointDepth = view_coor.z;
+        else
+            shaderPointDepth = proj_coor.z;
+
+        bias = 0.1f;
+        if (shaderPointDepth > shadowMapDepthBuffer + bias)
+        {
+            visibleFactor = 0;
+        }
+        else
+        {
+            visibleFactor = 1;
+        }
+        return visibleFactor;
+    }
 }
 
 

@@ -219,7 +219,7 @@ public class RasterizeForForwardRender : MonoBehaviour
                             lightShader.main_view_world_coor = main_camera.transform.position;
                             lightShader.OnLightForwardShader();
 
-                            Color pixelColor = lightShader.ambient + lightShader.diffuse * mainTexColor + lightShader.specular;
+                            Color pixelColor = (lightShader.ambient + lightShader.diffuse  + lightShader.specular) * mainTexColor ;
                             rasterizeTex2D.SetPixel(ii, jj, pixelColor);
                         }
                     }
@@ -398,7 +398,7 @@ public class RasterizeForForwardRender : MonoBehaviour
                             Color c2 = RasterizeUtils.GetColorByBilinear(texel, sampleTex2D, level1 + 1);
                             Color mainTexColor = Color.Lerp(c1, c2, levelRate);
 
-                            Color pixelColor = lightShader.ambient + diffuse * mainTexColor + specular;
+                            Color pixelColor = (lightShader.ambient + diffuse  + specular) * mainTexColor;
                             rasterizeTex2D.SetPixel(ii, jj, pixelColor);
                         }
                     }

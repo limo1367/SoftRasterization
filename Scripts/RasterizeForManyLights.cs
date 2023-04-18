@@ -80,7 +80,7 @@ public class RasterizeForManyLights : MonoBehaviour
                 Color color = frameBuffer.GetColorBuffer(i, j);
                 lightShader.OnLightDeferredShader(i, j,frameBuffer);
 
-                Color pixelColor = lightShader.ambient + lightShader.diffuse * color + lightShader.specular;
+                Color pixelColor = (lightShader.ambient + lightShader.diffuse  + lightShader.specular) * color;
                 rasterizeTex2D.SetPixel(i, j, pixelColor);
             }
         }

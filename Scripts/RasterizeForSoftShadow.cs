@@ -238,7 +238,7 @@ public class RasterizeForSoftShadow : MonoBehaviour
                             }
                             else if (softShadowType == "PCSS")
                             {
-                                int lightSize = 1;
+                                int lightSize = 2;
                                 penumbraSize = RasterizeUtils.GePenumbraSizeForPCSS(frameBuffer, worldCoor, light_view, light_projection, lightSize, direction_light_camera.orthographic);
                             }
                             else

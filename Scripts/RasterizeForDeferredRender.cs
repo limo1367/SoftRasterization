@@ -211,7 +211,7 @@ public class RasterizeForDeferredRender : MonoBehaviour
                             float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
 
 
-                            if (depthBuffer < 0)
+                            if (depthBuffer == 0)
                             {
 
                             }

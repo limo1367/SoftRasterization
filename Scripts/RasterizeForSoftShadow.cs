@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -65,7 +66,7 @@ public class RasterizeForSoftShadow : MonoBehaviour
             OnShadowMapRender(mesh);
         }
 
-        //OnShadowMapTexture();
+        OnShadowMapTexture();
 
         for (int i = 0; i < gameObjectMeshs.Length; i++)
         {
@@ -208,7 +209,7 @@ public class RasterizeForSoftShadow : MonoBehaviour
                             float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
 
 
-                            if (depthBuffer < 0)
+                            if (depthBuffer == 0)
                             {
 
                             }
@@ -231,24 +232,32 @@ public class RasterizeForSoftShadow : MonoBehaviour
                             lightShader.world_coor = worldCoor;
                             lightShader.main_view_world_coor = main_camera.transform.position;
                             lightShader.OnLightForwardShader();
-                            int penumbraSize ;
+
+                            int penumbraSize;
+                            float visibleFactor;
                             if (softShadowType == "PCF")
                             {
                                 penumbraSize = 1;
+                                visibleFactor = RasterizeUtils.GetVisibleFactorForPCF(frameBuffer, worldCoor, light_view, light_projection, penumbraSize, direction_light_camera.orthographic);
                             }
                             else if (softShadowType == "PCSS")
                             {
-                                int lightSize = 2;
-                                penumbraSize = RasterizeUtils.GePenumbraSizeForPCSS(frameBuffer, worldCoor, light_view, light_projection, lightSize, direction_light_camera.orthographic);
+                                int lightSize = 1;
+                                visibleFactor = RasterizeUtils.GetVisibleFactorForPCSS(frameBuffer, worldCoor, light_view, light_projection, lightSize, direction_light_camera.orthographic, mesh.gameObject.name == "Plane");
+                               
+                            }
+                            else if (softShadowType == "VSM")
+                            {
+                                int searchSize = 10;
+                                visibleFactor = RasterizeUtils.GetVisibleFactorForVSM(frameBuffer, worldCoor, light_view, light_projection, searchSize, direction_light_camera.orthographic, mesh.gameObject.name == "Plane");
+
                             }
                             else
                             {
                                 penumbraSize = 1;
+                                visibleFactor = RasterizeUtils.GetVisibleFactorForPCF(frameBuffer, worldCoor, light_view, light_projection, penumbraSize, direction_light_camera.orthographic);
                             }
-
-                            float visibleFactor = RasterizeUtils.GetVisibleFactorForPCF(frameBuffer, worldCoor, light_view, light_projection, penumbraSize,direction_light_camera.orthographic);
                             Color pixelColor = (lightShader.ambient + visibleFactor * (lightShader.diffuse  + lightShader.specular)) * mainTexColor;
-
                             rasterizeTex2D.SetPixel(ii, jj, pixelColor);
                         }
                     }
@@ -382,7 +391,7 @@ public class RasterizeForSoftShadow : MonoBehaviour
                             float depthBuffer = frameBuffer.GetShadowMapDepthBuffer(ii, jj);
 
 
-                            if (depthBuffer < 0)
+                            if (depthBuffer == 0)
                             {
 
                             }
@@ -522,13 +531,16 @@ public class RasterizeForSoftShadow : MonoBehaviour
             for (int j = 0; j < Screen.height; j++)
             {
                 float depth = frameBuffer.GetShadowMapDepthBuffer(i, j);
-                if (depth < 0) continue;
-                Color depthColor = new Color(depth / sumDepth, depth / sumDepth, depth / sumDepth);
-                shadowMapTex2D.SetPixel(i, j, depthColor);
+                if (depth == 0)
+                {
+                    frameBuffer.SetShadowMapDepthBuffer(i, j, sumDepth);
+                }
+              //  Color depthColor = new Color(depth / sumDepth, depth / sumDepth, depth / sumDepth);
+             //   shadowMapTex2D.SetPixel(i, j, depthColor);
             }
         }
-        shadowMapTex2D.Apply();
-        shadowMapImage.texture = shadowMapTex2D;
+        //shadowMapTex2D.Apply();
+        //shadowMapImage.texture = shadowMapTex2D;
 
     }
 }

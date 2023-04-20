@@ -455,7 +455,7 @@ public class RasterizeUtils
         return visibleFactor;
     }
 
-    public static int GePenumbraSizeForPCSS(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, int lightSize, bool isOrthographic)
+    public static float GetVisibleFactorForPCSS(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, int lightSize, bool isOrthographic,bool debug)
     {
         float shaderPointDepth;
         int penumbraSize;
@@ -481,6 +481,8 @@ public class RasterizeUtils
 
         bias = 0.1f;
 
+        float shadowMapDepthBuffer1 = frameBuffer.GetShadowMapDepthBuffer(pixel_x , pixel_y);
+       
         for (int i = -1 * lightSize; i <= lightSize; i++)
         {
             for (int j = -1 * lightSize; j <= lightSize; j++)
@@ -505,7 +507,113 @@ public class RasterizeUtils
         {
             penumbraSize = 1;
         }
-        return penumbraSize;
+        float visibleFactor = GetVisibleFactorForPCF(frameBuffer, shaderPointCoor, view, projection, penumbraSize, isOrthographic);
+        return visibleFactor;
+    }
+
+    public static float GetVisibleFactorForVSM(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, int searchSize,bool isOrthographic,bool debug)
+    {
+        Vector4 view_coor = view.MultiplyPoint(shaderPointCoor);
+        view_coor.w = 1;
+        Vector4 proj_coor = projection * view_coor;
+        Vector3 ndc_coor = new Vector3(proj_coor.x / proj_coor.w, proj_coor.y / proj_coor.w, proj_coor.z / proj_coor.w);
+        Vector2 viewport_coor = new Vector2((ndc_coor.x + 1) / 2, (ndc_coor.y + 1) / 2);
+        Vector2 pixel_coor = new Vector2(viewport_coor.x * Screen.width, viewport_coor.y * Screen.height);
+        int pixel_x = (int)pixel_coor.x;
+        int pixel_y = (int)pixel_coor.y;
+
+        int penumbraSize;
+        Texture2D sampleTex2D = frameBuffer.ShadowMapDepthBufferTex;
+        float shaderPointDepth = RasterizeUtils.GetShaderPointDepth(shaderPointCoor, view, projection, isOrthographic);
+
+        float shadowMapDepthBuffer1 = frameBuffer.GetShadowMapDepthBuffer(pixel_x, pixel_y);
+
+        Color depthTexel = RasterizeUtils.GetShadowMapDepthTexelByMipMap(sampleTex2D, shaderPointCoor, view, projection, searchSize);
+        
+        float averageDepth = depthTexel.r;
+        float squareDepth = depthTexel.g;
+        float p;
+        if (shaderPointDepth >= averageDepth)//12.54323 10.484
+            p = 0;//完全遮挡
+        else
+            p = 1;//完全暴露
+
+        float variance = Math.Max(squareDepth - averageDepth * averageDepth, 0.00002f);
+        float d = shaderPointDepth - averageDepth;
+        float p_max = variance / (variance + d * d);
+        p_max = Math.Min(Math.Max(p, p_max),1);
+        float blockerAverageDistance;
+        if (p_max == 1)
+        {
+            blockerAverageDistance = shaderPointDepth;
+        }
+        else
+        {
+            blockerAverageDistance = (averageDepth - p_max * shaderPointDepth) / (float)(1.0 - p_max);
+        }
+        penumbraSize = (int)((shaderPointDepth - blockerAverageDistance) * searchSize / blockerAverageDistance);
+        penumbraSize = Math.Max(penumbraSize, 1);
+        float visibleFactor = GetVisibleFactorForPCF(frameBuffer, shaderPointCoor, view, projection, penumbraSize, isOrthographic);
+        // Debug.LogError(penumbraSize);
+        return visibleFactor;
+    }
+    public static Color GetShadowMapDepthTexelByMipMap(Texture2D sampleTex2D, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, int sampleSize)
+    {
+        Vector4 view_coor = view.MultiplyPoint(shaderPointCoor);
+        view_coor.w = 1;
+        Vector4 proj_coor = projection * view_coor;
+        Vector3 ndc_coor = new Vector3(proj_coor.x / proj_coor.w, proj_coor.y / proj_coor.w, proj_coor.z / proj_coor.w);
+        Vector2 viewport_coor = new Vector2((ndc_coor.x + 1) / 2, (ndc_coor.y + 1) / 2);
+     //   Debug.LogError(" ndc_coor " + ndc_coor + " viewport_coor " + viewport_coor);
+        Vector2 pixel_coor = new Vector2(viewport_coor.x * Screen.width, viewport_coor.y * Screen.height);
+        Vector2 sampleTexelCoor = new Vector2(pixel_coor.x, pixel_coor.y);
+        Color color = GetAverageColorByMipMap(sampleTexelCoor, sampleTex2D, sampleSize);
+        return color;
+    }
+
+    public static Color GetAverageColorByMipMap(Vector2 sampleTexelCoor,Texture2D sampleTex2D, int sampleSize)
+    {
+        int level = (int)Math.Log(sampleSize, 2);
+       
+
+        int sampleTexelX = (int)sampleTexelCoor.x;
+        int sampleTexelY = (int)sampleTexelCoor.y;
+
+        sampleTexelX = (int)(sampleTexelX / sampleSize);
+        sampleTexelY = (int)(sampleTexelY / sampleSize);
+
+        int sampleSizeWidth = (int)(sampleTex2D.width / sampleSize);
+        int sampleSizeHeight = (int)(sampleTex2D.height / sampleSize);
+
+        int sampleSizeTexelX = sampleSizeWidth - 1;
+        int sampleSizeTexelY = sampleSizeHeight - 1;
+
+        int dx = sampleTexelX >= sampleSizeTexelX ? sampleSizeTexelX - 1 : sampleTexelX;
+        int dy = sampleTexelY >= sampleSizeTexelY ? sampleSizeTexelY - 1 : sampleTexelY;
+
+        //Debug.LogError(" level " + level  + " dx " + dx + " dy " + dy + "  levelCount " + sampleTex2D.mipmapCount + " sampleSize "+ sampleSize + " sampleSizeWidth " + sampleSizeWidth + " sampleSizeTexelY "+ sampleSizeTexelY + " sampleTexelX " + sampleTexelX + " sampleTexelY " + sampleTexelY + " sampleTexelCoor "+ sampleTexelCoor);
+        Color average = sampleTex2D.GetPixels(dx, dy, 1, 1, 0)[0];
+      
+        return average;
+    }
+
+    public static float GetShaderPointDepth(Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, bool isOrthographic)
+    {
+        float shaderPointDepth;
+        Vector4 view_coor = view.MultiplyPoint(shaderPointCoor);
+        view_coor.w = 1;
+        Vector4 proj_coor = projection * view_coor;
+        Vector3 ndc_coor = new Vector3(proj_coor.x / proj_coor.w, proj_coor.y / proj_coor.w, proj_coor.z / proj_coor.w);
+        Vector2 viewport_coor = new Vector2((ndc_coor.x + 1) / 2, (ndc_coor.y + 1) / 2);
+        Vector2 pixel_coor = new Vector2(viewport_coor.x * Screen.width, viewport_coor.y * Screen.height);
+        Vector2 sampleTexelCoor = new Vector2(pixel_coor.x, pixel_coor.y);
+
+        if (isOrthographic)
+            shaderPointDepth = view_coor.z;
+        else
+            shaderPointDepth = proj_coor.z;
+
+        return shaderPointDepth;
     }
 }
 

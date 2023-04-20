@@ -207,7 +207,7 @@ public class RasterizeForShadowMap : MonoBehaviour
                             float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
 
 
-                            if (depthBuffer < 0)
+                            if (depthBuffer == 0)
                             {
 
                             }
@@ -367,7 +367,7 @@ public class RasterizeForShadowMap : MonoBehaviour
                             float depthBuffer = frameBuffer.GetShadowMapDepthBuffer(ii, jj);
 
 
-                            if (depthBuffer < 0)
+                            if (depthBuffer == 0)
                             {
 
                             }

@@ -219,7 +219,7 @@ public class RasterizeForManyLights : MonoBehaviour
                             float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
 
 
-                            if (depthBuffer < 0)
+                            if (depthBuffer == 0)
                             {
 
                             }

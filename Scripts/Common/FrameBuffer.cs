@@ -24,7 +24,7 @@ public class FrameBuffer
         worldCoorBufferTex = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
         lightsColorDiffuseBufferTex = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
         lightsColorSpecularBufferTex = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
-        shadowMapDepthBufferTex = new Texture2D(width, height, TextureFormat.RFloat, true);
+        shadowMapDepthBufferTex = new Texture2D(width, height, TextureFormat.RGFloat, true);
         InitBuffer();
 
 
@@ -32,7 +32,7 @@ public class FrameBuffer
 
     public void SetDepthBuffer(int x, int y, float depth)
     {
-        depthBufferTex.SetPixel(x, y, new Color(depth, 0, 0));
+        depthBufferTex.SetPixel(x, y, new Color(depth, depth, 0));
     }
 
     public float GetDepthBuffer(int x, int y)
@@ -99,12 +99,17 @@ public class FrameBuffer
 
     public void SetShadowMapDepthBuffer(int x, int y, float depth)
     {
-        shadowMapDepthBufferTex.SetPixel(x, y, new Color(depth, 0, 0));
+        shadowMapDepthBufferTex.SetPixel(x, y, new Color(depth, depth * depth, 0));
     }
 
     public float GetShadowMapDepthBuffer(int x, int y)
     {
         return shadowMapDepthBufferTex.GetPixel(x, y).r;
+    }
+
+    public float GetShadowMapSquareDepthBuffer(int x, int y)
+    {
+        return shadowMapDepthBufferTex.GetPixel(x, y).g;
     }
 
     public void Apply()
@@ -122,14 +127,19 @@ public class FrameBuffer
         {
             for (int j = 0; j < texHeight; j++)
             {
-                SetDepthBuffer(i, j, -1);
+                SetDepthBuffer(i, j, 0);
                 SetColorBuffer(i, j, Color.black);
                 SetNormalBuffer(i, j, Vector3.zero);
                 SetWorldCoorBuffer(i, j, Vector3.zero);
                 SetLightsColorDiffuseBuffer(i, j, Color.black);
                 SetLightsColorSpecularBuffer(i, j, Color.black);
-                SetShadowMapDepthBuffer(i, j, -1);
+                SetShadowMapDepthBuffer(i, j, 0);
             }
         }
+    }
+
+    public Texture2D ShadowMapDepthBufferTex
+    {
+        get { return shadowMapDepthBufferTex; }
     }
 }

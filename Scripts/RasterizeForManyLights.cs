@@ -75,7 +75,7 @@ public class RasterizeForManyLights : MonoBehaviour
             for (int j = 0; j < Screen.height; j++)
             {
                 float depth = frameBuffer.GetDepthBuffer(i, j);
-                if (depth < 0) continue;
+                if (depth == 0) continue;
 
                 Color color = frameBuffer.GetColorBuffer(i, j);
                 lightShader.OnLightDeferredShader(i, j,frameBuffer);
@@ -315,8 +315,20 @@ public class RasterizeForManyLights : MonoBehaviour
 
     private void OnApplication(GameObject obj,ref List<Light> list)
     {
+        List<Light> tempList = new List<Light>();
         Light[] lights = lightShader.pointLightArray;
-        Light[] tempLightArray = RasterizeUtils.GetManyLightsToObject(obj, lights, 10);
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light light = lights[i];
+            tempList.Add(light);
+        }
+        lights = lightShader.spotLightArray;
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light light = lights[i];
+            tempList.Add(light);
+        }
+        Light[] tempLightArray = RasterizeUtils.GetManyLightsToObject(obj, tempList.ToArray(), 10);
         for (int i = 0; i < tempLightArray.Length; i++)
         {
             Light light = tempLightArray[i];
@@ -336,7 +348,7 @@ public class RasterizeForManyLights : MonoBehaviour
         {
             for (int j = 0; j < Screen.height; j++)
             {
-                depthBufferTex.SetPixel(i, j, new Color(-1, 0, 0));
+                depthBufferTex.SetPixel(i, j, new Color(0, 0, 0));
             }
         }
 
@@ -347,7 +359,8 @@ public class RasterizeForManyLights : MonoBehaviour
 
     public void OnWriteLightBackDepthBuffer(Light light, ref Texture2D depthTex)
     {
-        MeshFilter meshFilter = light.gameObject.GetComponent<MeshFilter>();
+        bool debug = light.gameObject.name == "PointLight2";
+        MeshFilter meshFilter = light.gameObject.GetComponentInChildren<MeshFilter>();
         int[] indices = meshFilter.mesh.triangles;//三角形索引数组的顺序来绘制
         Vertex[] vertexArray = RasterizeUtils.GetVertexArray(meshFilter);
 
@@ -445,7 +458,7 @@ public class RasterizeForManyLights : MonoBehaviour
 
                             float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
 
-                            if (depthBuffer < 0) continue;
+                            if (depthBuffer == 0) continue;
                             if (depth <= depthBuffer) continue;
                             depthTex.SetPixel(ii, jj, new Color(depth, 0, 0));
                         }
@@ -457,10 +470,12 @@ public class RasterizeForManyLights : MonoBehaviour
 
     public void OnWriteLightBuffer(Light light, ref Texture2D depthTex)
     {
-        MeshFilter meshFilter = light.gameObject.GetComponent<MeshFilter>();
+        bool debug = light.gameObject.name == "PointLight2";
+
+        MeshFilter meshFilter = light.gameObject.GetComponentInChildren<MeshFilter>();
         int[] indices = meshFilter.mesh.triangles;//三角形索引数组的顺序来绘制
         Vertex[] vertexArray = RasterizeUtils.GetVertexArray(meshFilter);
-
+       
         for (int i = 0; i < indices.Length; i += 3)
         {
             int index1 = indices[i];
@@ -496,9 +511,10 @@ public class RasterizeForManyLights : MonoBehaviour
             List<Vector4> clippedVertices4 = RasterizeUtils.ClipWithPlane(clippedVertices3, ClipPlane.Right);
             List<Vector4> clippedVertices5 = RasterizeUtils.ClipWithPlane(clippedVertices4, ClipPlane.Top);
             List<Vector4> clippedVertices6 = RasterizeUtils.ClipWithPlane(clippedVertices5, ClipPlane.Bottom);
-
+           
             if (clippedVertices6.Count < 3)
                 continue;
+           
 
             for (int iClipVert = 0; iClipVert < clippedVertices6.Count - 2; iClipVert++)
             {
@@ -560,16 +576,24 @@ public class RasterizeForManyLights : MonoBehaviour
                             float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
                             Vector3 worldCoor = frameBuffer.GetWorldCoorBuffer(ii, jj);
                             Vector3 normal = frameBuffer.GetNormalBuffer(ii, jj);
-
-                            if (depthBuffer < 0) continue;
+                            
+                            if (depthBuffer == 0) continue;
 
                             float backDepth = depthTex.GetPixel(ii, jj).r;
-                            if (backDepth < 0) continue;
-
+                            
+                            if (backDepth == 0) continue;
+                            
                             if (backDepth > depthBuffer && depthBuffer > depth)
                             {
-                                Color diffuseColor = RasterizeUtils.OnDiffuse(light, worldCoor, normal);
-                                Color colorBuffer = frameBuffer.GetLightsColorDiffuseBuffer(ii, jj);
+                                Color diffuseColor = Color.black;
+                                Color colorBuffer = Color.black;
+
+                                if (light.type == LightType.Point)
+                                {
+                                    diffuseColor = RasterizeUtils.OnPointDiffuse(light, worldCoor, normal);
+                                }
+                                colorBuffer = frameBuffer.GetLightsColorDiffuseBuffer(ii, jj);
+
                                 colorBuffer += diffuseColor;
                                 frameBuffer.SetLightsColorDiffuseBuffer(ii, jj, colorBuffer);
 

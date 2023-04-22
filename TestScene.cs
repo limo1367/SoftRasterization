@@ -10,13 +10,14 @@ public class TestScene : MonoBehaviour
     {
         float degrees = 180;
         double angle = Math.PI * degrees / 180.0;
-     //   Debug.LogError(Math.Cos(angle));
-     //   Debug.LogError(this.transform.forward);
-      //  Debug.LogError(Quaternion.Euler(45, 0, 0) * this.transform.forward);
-     //   this.transform.rotation = Quaternion.Euler(45, 0, 0) *  this.transform.rotation ;
+        //   Debug.LogError(Math.Cos(angle));
+        //   Debug.LogError(this.transform.forward);
+        //  Debug.LogError(Quaternion.Euler(45, 0, 0) * this.transform.forward);
+        //   this.transform.rotation = Quaternion.Euler(45, 0, 0) *  this.transform.rotation ;
 
-        Debug.LogError(Math.Pow(2, 3));
-       
+        //  Debug.LogError(Math.Pow(2, 3));
+        Debug.LogError(this.transform.forward);
+        Debug.LogError(this.transform.forward.normalized);
     }
 
     // Update is called once per frame

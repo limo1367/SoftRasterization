@@ -13,6 +13,7 @@ public class FrameBuffer
     private Texture2D lightsColorDiffuseBufferTex;
     private Texture2D lightsColorSpecularBufferTex;
     private Texture2D shadowMapDepthBufferTex;
+    private Dictionary<string, Texture2D> shadowMapDepthBufferTexDict;
 
     public FrameBuffer(int width, int height)
     {
@@ -25,10 +26,11 @@ public class FrameBuffer
         lightsColorDiffuseBufferTex = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
         lightsColorSpecularBufferTex = new Texture2D(width, height, TextureFormat.RGBAFloat, false);
         shadowMapDepthBufferTex = new Texture2D(width, height, TextureFormat.RGFloat, true);
+        shadowMapDepthBufferTexDict = new Dictionary<string, Texture2D>();
         InitBuffer();
-
-
     }
+
+    
 
     public void SetDepthBuffer(int x, int y, float depth)
     {
@@ -112,6 +114,19 @@ public class FrameBuffer
         return shadowMapDepthBufferTex.GetPixel(x, y).g;
     }
 
+
+    public void SetShadowMapDepthBufferByTexName(string name,int x, int y, float depth)
+    {
+        Texture2D tex = shadowMapDepthBufferTexDict[name];
+        tex.SetPixel(x, y, new Color(depth, depth * depth, 0));
+    }
+
+    public float GetShadowMapDepthBufferByTexName(string name,int x, int y)
+    {
+        Texture2D tex = shadowMapDepthBufferTexDict[name];
+        return tex.GetPixel(x, y).r;
+    }
+
     public void Apply()
     {
         depthBufferTex.Apply();
@@ -135,6 +150,27 @@ public class FrameBuffer
                 SetLightsColorSpecularBuffer(i, j, Color.black);
                 SetShadowMapDepthBuffer(i, j, 0);
             }
+        }
+    }
+
+    public void InitManyShadowMaps(Light[] lights)
+    {
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light ligt = lights[i];
+            string name = ligt.gameObject.name;
+            if (!shadowMapDepthBufferTexDict.ContainsKey(name))
+                shadowMapDepthBufferTexDict[name] = new Texture2D(texWidth, texHeight, TextureFormat.RGFloat, true);
+
+            Texture2D tex = shadowMapDepthBufferTexDict[name];
+            for (int x = 0; x < texWidth; x++)
+            {
+                for (int y = 0; y < texHeight; y++)
+                {
+                    SetShadowMapDepthBufferByTexName(name,x,y,0);
+                }
+            }
+
         }
     }
 

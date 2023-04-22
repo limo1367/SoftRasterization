@@ -311,8 +311,15 @@ public class RasterizeUtils
         LightType lightType = light.type;
         Color lightColor = light.color;
         float attenuationFactor = 1;
+
         Vector3 lightCoor = light.transform.position;
-        Vector3 lightDir = (lightCoor - shaderPointCoor).normalized;
+
+        Vector3 lightDir;
+        if (lightType == LightType.Directional)
+            lightDir = -1 * light.transform.forward;
+        else
+            lightDir = (lightCoor - shaderPointCoor).normalized;
+
         float intensity = light.intensity;
 
         if (lightType == LightType.Directional)
@@ -358,7 +365,13 @@ public class RasterizeUtils
         float attenuationFactor = 1;
 
         Vector3 lightCoor = light.transform.position;
-        Vector3 lightDir = lightCoor - shaderPointCoor;
+
+        Vector3 lightDir;
+        if (lightType == LightType.Directional)
+            lightDir = -1 * light.transform.forward;
+        else
+            lightDir = (lightCoor - shaderPointCoor).normalized;
+
         Vector3 viewDir = viewWorldCoor - shaderPointCoor;
         Vector3 h = (lightDir + viewDir).normalized;
 
@@ -433,6 +446,8 @@ public class RasterizeUtils
 
         float shadowMapDepthBuffer = frameBuffer.GetShadowMapDepthBuffer(pixel_x, pixel_y);
 
+        bool isInView = IsInView(viewport_coor);
+
         if (isOrthographic)
             shaderPointDepth = view_coor.z;
         else
@@ -447,9 +462,9 @@ public class RasterizeUtils
         {
             visibleFactor = 1;
         }
+        visibleFactor = isInView ? visibleFactor : 1;
         return visibleFactor;
     }
-
 
     public static float GetVisibleFactorForPCF(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection,int penumbraSize, bool isOrthographic)
     {
@@ -467,6 +482,8 @@ public class RasterizeUtils
         Vector2 pixel_coor = new Vector2(viewport_coor.x * Screen.width, viewport_coor.y * Screen.height);
         int pixel_x = (int)pixel_coor.x;
         int pixel_y = (int)pixel_coor.y;
+
+        bool isInView = IsInView(viewport_coor);
 
         if (isOrthographic)
             shaderPointDepth = view_coor.z;
@@ -488,15 +505,15 @@ public class RasterizeUtils
                 {
                     visibleCount += 1;
                 }
-
             }
         }
 
         visibleFactor = visibleCount / penumbraArea;
+        visibleFactor = isInView ? visibleFactor : 1;
         return visibleFactor;
     }
 
-    public static float GetVisibleFactorForPCSS(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, int lightSize, bool isOrthographic,bool debug)
+    public static float GetVisibleFactorForPCSS(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, int lightSize, bool isOrthographic)
     {
         float shaderPointDepth;
         int penumbraSize;
@@ -509,6 +526,8 @@ public class RasterizeUtils
         Vector2 pixel_coor = new Vector2(viewport_coor.x * Screen.width, viewport_coor.y * Screen.height);
         int pixel_x = (int)pixel_coor.x;
         int pixel_y = (int)pixel_coor.y;
+
+        bool isInView = IsInView(viewport_coor);
 
         if (isOrthographic)
             shaderPointDepth = view_coor.z;
@@ -549,10 +568,11 @@ public class RasterizeUtils
             penumbraSize = 1;
         }
         float visibleFactor = GetVisibleFactorForPCF(frameBuffer, shaderPointCoor, view, projection, penumbraSize, isOrthographic);
+        visibleFactor = isInView ? visibleFactor : 1;
         return visibleFactor;
     }
 
-    public static float GetVisibleFactorForVSM(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, int searchSize,bool isOrthographic,bool debug)
+    public static float GetVisibleFactorForVSM(FrameBuffer frameBuffer, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, int searchSize,bool isOrthographic)
     {
         Vector4 view_coor = view.MultiplyPoint(shaderPointCoor);
         view_coor.w = 1;
@@ -562,6 +582,8 @@ public class RasterizeUtils
         Vector2 pixel_coor = new Vector2(viewport_coor.x * Screen.width, viewport_coor.y * Screen.height);
         int pixel_x = (int)pixel_coor.x;
         int pixel_y = (int)pixel_coor.y;
+
+        bool isInView = IsInView(viewport_coor);
 
         int penumbraSize;
         Texture2D sampleTex2D = frameBuffer.ShadowMapDepthBufferTex;
@@ -595,20 +617,25 @@ public class RasterizeUtils
         penumbraSize = (int)((shaderPointDepth - blockerAverageDistance) * searchSize / blockerAverageDistance);
         penumbraSize = Math.Max(penumbraSize, 1);
         float visibleFactor = GetVisibleFactorForPCF(frameBuffer, shaderPointCoor, view, projection, penumbraSize, isOrthographic);
-        // Debug.LogError(penumbraSize);
+        visibleFactor = isInView ? visibleFactor : 1;
         return visibleFactor;
     }
     public static Color GetShadowMapDepthTexelByMipMap(Texture2D sampleTex2D, Vector3 shaderPointCoor, Matrix4x4 view, Matrix4x4 projection, int sampleSize)
     {
+        Color color;
         Vector4 view_coor = view.MultiplyPoint(shaderPointCoor);
         view_coor.w = 1;
         Vector4 proj_coor = projection * view_coor;
         Vector3 ndc_coor = new Vector3(proj_coor.x / proj_coor.w, proj_coor.y / proj_coor.w, proj_coor.z / proj_coor.w);
         Vector2 viewport_coor = new Vector2((ndc_coor.x + 1) / 2, (ndc_coor.y + 1) / 2);
-     //   Debug.LogError(" ndc_coor " + ndc_coor + " viewport_coor " + viewport_coor);
+        bool isInView = IsInView(viewport_coor);
+        //   Debug.LogError(" ndc_coor " + ndc_coor + " viewport_coor " + viewport_coor);
         Vector2 pixel_coor = new Vector2(viewport_coor.x * Screen.width, viewport_coor.y * Screen.height);
         Vector2 sampleTexelCoor = new Vector2(pixel_coor.x, pixel_coor.y);
-        Color color = GetAverageColorByMipMap(sampleTexelCoor, sampleTex2D, sampleSize);
+        if (isInView)
+            color = GetAverageColorByMipMap(sampleTexelCoor, sampleTex2D, sampleSize);
+        else
+            color = Color.black;
         return color;
     }
 
@@ -693,6 +720,13 @@ public class RasterizeUtils
             factor = distance > lightRange ? 0 : factor;
         }
         return factor;
+    }
+
+    public static bool IsInView(Vector2 viewport_coor)
+    {
+        bool isInView = (viewport_coor.x >= 0 && viewport_coor.x <= 1) &&
+                        (viewport_coor.y >= 0 && viewport_coor.y <= 1);
+        return isInView;
     }
 }
 

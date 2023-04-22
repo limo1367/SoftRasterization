@@ -483,8 +483,20 @@ public class RasterizeForShadowMap : MonoBehaviour
 
     private void OnApplication(GameObject obj)
     {
+        List<Light> list = new List<Light>();
         Light[] lights = lightShader.pointLightArray;
-        lightShader.lightForViewArray = RasterizeUtils.GetManyLightsToObject(obj, lights);
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light light = lights[i];
+            list.Add(light);
+        }
+        lights = lightShader.spotLightArray;
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light light = lights[i];
+            list.Add(light);
+        }
+        lightShader.lightForViewArray = RasterizeUtils.GetManyLightsToObject(obj, list.ToArray());
     }
 
     private void OnShadowMapTexture()
@@ -505,7 +517,7 @@ public class RasterizeForShadowMap : MonoBehaviour
             for (int j = 0; j < Screen.height; j++)
             {
                 float depth = frameBuffer.GetShadowMapDepthBuffer(i, j);
-                if (depth < 0) continue;
+                if (depth == 0) continue;
                 Color depthColor = new Color(depth / sumDepth, depth / sumDepth, depth / sumDepth);
                 shadowMapTex2D.SetPixel(i, j, depthColor);
             }

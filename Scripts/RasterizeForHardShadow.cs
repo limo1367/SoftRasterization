@@ -45,8 +45,9 @@ public class RasterizeForHardShadow : MonoBehaviour
         sampleTex2D = modelProperty.albedo;
 
         main_camera = GameObject.Find("MainCamera").GetComponent<Camera>();
-       
 		GameObject lightRoot = GameObject.Find("LightRoot");
+        Light[] lightArray = lightRoot.GetComponentsInChildren<Light>();
+
         lightShader = new LightShader(lightRoot);
         frameBuffer = new FrameBuffer(Screen.width, Screen.height);
 
@@ -488,8 +489,20 @@ public class RasterizeForHardShadow : MonoBehaviour
 
     private void OnApplication(GameObject obj)
     {
+        List<Light> list = new List<Light>();
         Light[] lights = lightShader.pointLightArray;
-        lightShader.lightForViewArray = RasterizeUtils.GetManyLightsToObject(obj, lights);
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light light = lights[i];
+            list.Add(light);
+        }
+        lights = lightShader.spotLightArray;
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light light = lights[i];
+            list.Add(light);
+        }
+        lightShader.lightForViewArray = RasterizeUtils.GetManyLightsToObject(obj, list.ToArray());
     }
 
     private void OnShadowMapTexture()

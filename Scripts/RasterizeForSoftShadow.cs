@@ -242,14 +242,14 @@ public class RasterizeForSoftShadow : MonoBehaviour
                             }
                             else if (softShadowType == "PCSS")
                             {
-                                int lightSize = 1;
-                                visibleFactor = RasterizeUtils.GetVisibleFactorForPCSS(frameBuffer, worldCoor, light_view, light_projection, lightSize, direction_light_camera.orthographic, mesh.gameObject.name == "Plane");
+                                int lightSize = 3;
+                                visibleFactor = RasterizeUtils.GetVisibleFactorForPCSS(frameBuffer, worldCoor, light_view, light_projection, lightSize, direction_light_camera.orthographic);
                                
                             }
                             else if (softShadowType == "VSM")
                             {
                                 int searchSize = 10;
-                                visibleFactor = RasterizeUtils.GetVisibleFactorForVSM(frameBuffer, worldCoor, light_view, light_projection, searchSize, direction_light_camera.orthographic, mesh.gameObject.name == "Plane");
+                                visibleFactor = RasterizeUtils.GetVisibleFactorForVSM(frameBuffer, worldCoor, light_view, light_projection, searchSize, direction_light_camera.orthographic);
 
                             }
                             else
@@ -509,8 +509,20 @@ public class RasterizeForSoftShadow : MonoBehaviour
 
     private void OnApplication(GameObject obj)
     {
+        List<Light> list = new List<Light>();
         Light[] lights = lightShader.pointLightArray;
-        lightShader.lightForViewArray = RasterizeUtils.GetManyLightsToObject(obj, lights);
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light light = lights[i];
+            list.Add(light);
+        }
+        lights = lightShader.spotLightArray;
+        for (int i = 0; i < lights.Length; i++)
+        {
+            Light light = lights[i];
+            list.Add(light);
+        }
+        lightShader.lightForViewArray = RasterizeUtils.GetManyLightsToObject(obj, list.ToArray());
     }
 
     private void OnShadowMapTexture()

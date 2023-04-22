@@ -207,7 +207,7 @@ public class RasterizeForDeferredRender : MonoBehaviour
                                                    vert2.normal / vert2.vert_view_coor.z * barycentricCoordinate.y +
                                                    vert3.normal / vert3.vert_view_coor.z * barycentricCoordinate.z);
                             }
-
+                            normal = normal.normalized;
                             float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
 
 

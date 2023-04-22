@@ -191,7 +191,7 @@ public class RasterizeForForwardRender : MonoBehaviour
                                                    vert2.normal / vert2.vert_view_coor.z * barycentricCoordinate.y +
                                                    vert3.normal / vert3.vert_view_coor.z * barycentricCoordinate.z);
                             }
-
+                            normal = normal.normalized;
                             float depthBuffer = frameBuffer.GetDepthBuffer(ii, jj);
 
 
@@ -220,7 +220,7 @@ public class RasterizeForForwardRender : MonoBehaviour
                             lightShader.OnLightForwardShader();
 
                             Color pixelColor = (lightShader.ambient + lightShader.diffuse  + lightShader.specular) * mainTexColor ;
-                            rasterizeTex2D.SetPixel(ii, jj, pixelColor);
+                            rasterizeTex2D.SetPixel(ii, jj, new Color(pixelColor.r, pixelColor.g, pixelColor.b,1));
                         }
                     }
                 }

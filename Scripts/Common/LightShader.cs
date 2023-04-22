@@ -56,23 +56,14 @@ public class LightShader
 		diffuse = Color.black;
 		specular = Color.black;
 		
-        diffuse += RasterizeUtils.OnDirectionalDiffuse(directionLight,world_coor,normal);
+        diffuse += RasterizeUtils.OnDiffuse(directionLight,world_coor,normal);
 		
 		for(int i = 0; i < lightForViewArray.Length; i++)
 		{
 			Light light = lightForViewArray[i];
-			if (light.type == LightType.Point)
-			{
-				diffuse += RasterizeUtils.OnPointDiffuse(light, world_coor, normal);
-				specular += RasterizeUtils.OnSpecular(light, world_coor, normal, main_view_world_coor);
-			}
-			else if (light.type == LightType.Spot)
-			{
-				diffuse += RasterizeUtils.OnSpotDiffuse(light, world_coor, normal);
-			}
-
-
-		}
+            diffuse += RasterizeUtils.OnDiffuse(light, world_coor, normal);
+            specular += RasterizeUtils.OnSpecular(light, world_coor, normal, main_view_world_coor);
+        }
 		
 		ambient = ambientLight.color;
     }
@@ -85,7 +76,7 @@ public class LightShader
 		normal = frameBuffer.GetNormalBuffer(x, y);
         world_coor = frameBuffer.GetWorldCoorBuffer(x, y);
                 
-        diffuse += RasterizeUtils.OnDirectionalDiffuse(directionLight,world_coor,normal);
+        diffuse += RasterizeUtils.OnDiffuse(directionLight,world_coor,normal);
 
 		diffuse += frameBuffer.GetLightsColorDiffuseBuffer(x,y);
 		specular += frameBuffer.GetLightsColorSpecularBuffer(x, y);

@@ -1,7 +1,11 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Net;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class RasterizeUtils
 {
@@ -301,81 +305,83 @@ public class RasterizeUtils
         return c;
     }
 	
-	public static Color OnDirectionalDiffuse(Light light,Vector3 shaderPointCoor,Vector3 shaderPointNormal)
+    public static Color OnDiffuse(Light light, Vector3 shaderPointCoor, Vector3 shaderPointNormal)
     {
-        Color diffuse = Color.black;
+        Color diffuse;
+        LightType lightType = light.type;
         Color lightColor = light.color;
+        float attenuationFactor = 1;
         Vector3 lightCoor = light.transform.position;
         Vector3 lightDir = (lightCoor - shaderPointCoor).normalized;
-
-        Color color;
-        color = lightColor * Mathf.Max(0, Vector3.Dot(lightDir, shaderPointNormal));
-        diffuse += color;
-
-        return diffuse;
-
-    }
-
-    public static Color OnPointDiffuse(Light light, Vector3 shaderPointCoor, Vector3 shaderPointNormal)
-    {
-        Color diffuse = Color.black;
-        Color lightColor = light.color;
-        Vector3 lightCoor = light.transform.position;
-        Vector3 lightDir = (lightCoor - shaderPointCoor).normalized;
-
-        Color color;
-        
-        float dis = Vector3.Distance(lightCoor, shaderPointCoor);
-        float attenuation = (float)(1 / Math.Pow((dis / light.range + 1),2));
-       // float attenuation = (float)(1 / (Math.Pow(dis, 2)));
-
-        color = lightColor * Mathf.Max(0, Vector3.Dot(lightDir, shaderPointNormal)) * attenuation * light.intensity;
-        diffuse += color;
-
-        return diffuse;
-
-    }
-
-    public static Color OnSpotDiffuse(Light light, Vector3 shaderPointCoor, Vector3 shaderPointNormal)
-    {
-        Color diffuse = Color.black;
-        Color lightColor = light.color;
-        float angle = light.spotAngle / 2;
         float intensity = light.intensity;
-        float range = light.range;
-        Vector3 lightCoor = light.transform.position;
-        Vector3 shaderPointToLightDir = (lightCoor - shaderPointCoor).normalized;
-        float dis = Vector3.Distance(lightCoor, shaderPointCoor);
 
-        Vector3 spotLightDir = light.transform.forward;
-        float cutoff = (float)Math.Cos(angle * Math.PI / 180) ;
-        float spotFactor = Vector3.Dot(-1 * shaderPointToLightDir, spotLightDir);
-
-        if (spotFactor > cutoff)
+        if (lightType == LightType.Directional)
         {
-            intensity *= (1.0f - (1.0f - spotFactor) / (1.0f - cutoff));
-           // float attenuation = 1 / dis ;
-            float attenuation = (float)(1 / Math.Pow((dis / light.range + 1), 2));
-            diffuse = lightColor * Mathf.Max(0, Vector3.Dot(shaderPointToLightDir, shaderPointNormal)) * attenuation * intensity;
+            attenuationFactor = 1;
         }
+        else if (lightType == LightType.Point)
+        {
+            attenuationFactor = GetLightAttenuationFactor("Point", light, shaderPointCoor);
+
+        }
+        else if (lightType == LightType.Spot)
+        {
+            float angle = light.spotAngle / 2;
+            Vector3 spotLightDir = light.transform.forward;
+            float cutoff = (float)Math.Cos(angle * Math.PI / 180);
+            float spotFactor = Vector3.Dot(-1 * lightDir, spotLightDir);
+
+            if (spotFactor > cutoff)
+            {
+                intensity *= (1.0f - (1.0f - spotFactor) / (1.0f - cutoff));
+                attenuationFactor = GetLightAttenuationFactor("Attenuation2", light, shaderPointCoor);
+            }
+            else
+                intensity = 0;
+        }
+        else
+        {
+            intensity = 0;
+        }
+
+        diffuse = lightColor * Mathf.Max(0, Vector3.Dot(lightDir, shaderPointNormal)) * attenuationFactor * intensity;
+        diffuse = intensity == 0 ? Color.black : diffuse;
         return diffuse;
+
     }
 
-    public static Color OnSpecular(Light light,Vector3 shaderPointCoor,Vector3 shaderPointNormal,Vector3 viewWorldCoor)
+    public static Color OnSpecular(Light light, Vector3 shaderPointCoor, Vector3 shaderPointNormal, Vector3 viewWorldCoor)
     {
-        Color specular = Color.black;
+        Color specular;
+        LightType lightType = light.type;
+        float intensity = light.intensity;
+        float attenuationFactor = 1;
 
         Vector3 lightCoor = light.transform.position;
         Vector3 lightDir = lightCoor - shaderPointCoor;
-
-        float distance = Vector3.Distance(lightCoor, shaderPointCoor);
-        float attenuation = 1 / distance;
-
         Vector3 viewDir = viewWorldCoor - shaderPointCoor;
         Vector3 h = (lightDir + viewDir).normalized;
 
-        specular += Color.white * Mathf.Max(0, Mathf.Pow(Vector3.Dot(h, shaderPointNormal), 64)) * attenuation;
-		return specular;
+        if (lightType == LightType.Directional)
+        {
+            intensity = 0;
+        }
+        else if (lightType == LightType.Point)
+        {
+            attenuationFactor = GetLightAttenuationFactor("Point", light, shaderPointCoor);
+        }
+        else if (lightType == LightType.Spot)
+        {
+            //attenuationFactor = GetLightAttenuationFactor("Point", light, shaderPointCoor);
+            intensity = 0;
+        }
+        else
+        {
+            intensity = 0;
+        }
+        specular = light.color * Mathf.Pow(Mathf.Max(Vector3.Dot(h, shaderPointNormal), 0), 2) * intensity * attenuationFactor;
+        specular = intensity == 0 ? Color.black : specular;
+        return specular;
     }
 
 
@@ -649,6 +655,44 @@ public class RasterizeUtils
             shaderPointDepth = proj_coor.z;
 
         return shaderPointDepth;
+    }
+
+
+    public static float GetLightAttenuationFactor(string attenuationType, Light light, Vector3 shaderPointCoor)
+    {
+        float factor = 0;
+
+        float lightRange = light.range;
+        Vector3 lightCoor = light.transform.position;
+        Vector3 lightDir = (lightCoor - shaderPointCoor).normalized;
+        float distance = Vector3.Distance(lightCoor, shaderPointCoor);
+
+        if (attenuationType == "Attenuation")
+        {
+            factor = (float)Math.Pow((distance / lightRange * 5), 2);
+            factor = 1 / (factor + 1);
+        }
+        else if (attenuationType == "Attenuation2")
+        {
+            factor = (distance / light.range + 1);
+            factor = (1 / (factor * factor));
+        }
+        else if (attenuationType == "Linear")
+        {
+            factor = 1 / (distance * distance);
+            factor = distance > lightRange ? 0 : factor;
+        }
+        else if (attenuationType == "Point")
+        {
+            factor = (lightRange - distance) / lightRange;
+            factor = distance > lightRange ? 0 : factor;
+        }
+        else if (attenuationType == "Spot")
+        {
+            factor = (lightRange - distance) / lightRange;
+            factor = distance > lightRange ? 0 : factor;
+        }
+        return factor;
     }
 }
 

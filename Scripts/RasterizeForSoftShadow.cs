@@ -66,7 +66,7 @@ public class RasterizeForSoftShadow : MonoBehaviour
             OnShadowMapRender(mesh);
         }
 
-        OnShadowMapTexture();
+        //OnShadowMapTexture();
 
         for (int i = 0; i < gameObjectMeshs.Length; i++)
         {
@@ -248,7 +248,7 @@ public class RasterizeForSoftShadow : MonoBehaviour
                             }
                             else if (softShadowType == "VSM")
                             {
-                                int searchSize = 10;
+                                int searchSize = 20;
                                 visibleFactor = RasterizeUtils.GetVisibleFactorForVSM(frameBuffer, worldCoor, light_view, light_projection, searchSize, direction_light_camera.orthographic);
 
                             }
@@ -543,16 +543,13 @@ public class RasterizeForSoftShadow : MonoBehaviour
             for (int j = 0; j < Screen.height; j++)
             {
                 float depth = frameBuffer.GetShadowMapDepthBuffer(i, j);
-                if (depth == 0)
-                {
-                    frameBuffer.SetShadowMapDepthBuffer(i, j, sumDepth);
-                }
-              //  Color depthColor = new Color(depth / sumDepth, depth / sumDepth, depth / sumDepth);
-             //   shadowMapTex2D.SetPixel(i, j, depthColor);
+               
+                Color depthColor = new Color(depth / sumDepth, depth / sumDepth, depth / sumDepth);
+                shadowMapTex2D.SetPixel(i, j, depthColor);
             }
         }
-        //shadowMapTex2D.Apply();
-        //shadowMapImage.texture = shadowMapTex2D;
+        shadowMapTex2D.Apply();
+        shadowMapImage.texture = shadowMapTex2D;
 
     }
 }
